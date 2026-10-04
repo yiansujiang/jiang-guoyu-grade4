@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>窗口邊的臺灣欒樹｜互動闖關</title>
+<style>
+  /* ============ 沉靜自然色系（低感官刺激、高對比、ASD 友善） ============ */
+  :root{
+    --bg:#f4f1e8;          /* 溫潤紙色底，避免純白刺眼 */
+    --bg-top:#eef2e6;
+    --panel:#fffdf8;       /* 卡面 */
+    --panel-soft:#f7f4ea;
+    --ink:#33352e;         /* 柔和近黑，非純黑 */
+    --muted:#6f7266;
+    --line:#e0dccb;
+    --accent:#3f9d7c;      /* 主要行動色：沉靜綠 */
+    --accent-dark:#2f7d62;
+    --accent-soft:#e2f0e8;
+    --star:#e8a13c;        /* 星星金 */
+    --ok:#4a9e6d;
+    --ok-soft:#e5f3ea;
+    --retry:#d98a2b;       /* 再試一次：暖橘，非懲罰性紅 */
+    --retry-soft:#fbeeda;
+    --spring:#7bc47f; --summer:#2f8f5b; --autumn:#e0a23a; --winter:#89aec2;
+    --radius:20px;
+    --shadow:0 6px 20px rgba(60,70,50,.10);
+    --fs:1;   /* 字級倍率，由按鈕調整 */
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:linear-gradient(180deg,var(--bg-top),var(--bg));
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC","Heiti TC",sans-serif;
+    font-size:calc(19px * var(--fs));
+    line-height:1.9;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    letter-spacing:.01em;
+  }
+  /* ============ 頂部固定列：品牌、進度、工具 ============ */
+  header.topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,253,248,.92);
+    backdrop-filter:blur(6px);
+    border-bottom:2px solid var(--line);
+    padding:10px clamp(12px,3vw,28px);
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;color:var(--accent-dark);font-size:.82em;white-space:nowrap;}
+  .brand .badge{width:30px;height:30px;flex:none;}
+  .topbar .title{font-weight:800;font-size:.86em;color:var(--ink);flex:1;min-width:140px;}
+  /* 全域四關進度星 */
+  .prog{display:flex;gap:6px;align-items:center;}
+  .prog .dot{
+    width:30px;height:30px;border-radius:50%;border:2px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:.68em;font-weight:800;
+    background:var(--panel-soft);color:var(--muted);
+  }
+  .prog .dot.done{background:var(--star);border-color:var(--star);color:#fff;}
+  .prog .dot.current{border-color:var(--accent);color:var(--accent-dark);background:var(--accent-soft);}
+  .tools{display:flex;gap:8px;align-items:center;}
+  .tool-btn{
+    border:2px solid var(--line);background:var(--panel);border-radius:12px;
+    padding:6px 10px;font-size:.72em;cursor:pointer;color:var(--ink);font-weight:700;
+    font-family:inherit;line-height:1;display:flex;align-items:center;gap:5px;
+  }
+  .tool-btn:hover{border-color:var(--accent);}
+  .tool-btn.off{opacity:.5;text-decoration:line-through;}
+  /* ============ 主容器 ============ */
+  main{max-width:820px;margin:0 auto;padding:clamp(16px,3vw,30px) clamp(14px,3vw,22px) 60px;}
+  .card{
+    background:var(--panel);border:2px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:clamp(20px,4vw,36px);
+  }
+  h1,h2,h3{line-height:1.5;margin:0 0 .5em;}
+  /* ============ 首頁：學習地圖關卡（視覺化學習流程 = 視覺時間表） ============ */
+  .home-hero{text-align:center;margin-bottom:26px;}
+  .home-hero .tree-emoji{font-size:2.6em;line-height:1;}
+  .home-hero h1{font-size:1.5em;color:var(--accent-dark);margin-top:.2em;}
+  .home-hero .author{color:var(--muted);font-size:.9em;}
+  .home-hero .intro{
+    background:var(--accent-soft);border-radius:16px;padding:14px 18px;margin:16px auto 0;
+    max-width:600px;text-align:left;font-size:.92em;border:1px solid #cfe6d9;
+  }
+  .roadmap{display:flex;flex-direction:column;gap:0;margin-top:10px;}
+  .level-row{display:flex;align-items:stretch;gap:14px;}
+  .level-rail{display:flex;flex-direction:column;align-items:center;width:46px;flex:none;}
+  .level-rail .num{
+    width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:1.05em;border:3px solid var(--line);background:var(--panel);color:var(--muted);
+  }
+  .level-rail .line-v{flex:1;width:4px;background:var(--line);border-radius:2px;min-height:14px;}
+  .level-row.done .num{background:var(--star);border-color:var(--star);color:#fff;}
+  .level-row.current .num{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .level-card{
+    flex:1;background:var(--panel);border:2px solid var(--line);border-radius:16px;
+    padding:16px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px;
+    transition:border-color .2s,transform .15s;
+  }
+  .level-row.current .level-card{border-color:var(--accent);box-shadow:var(--shadow);}
+  .level-row.locked .level-card{opacity:.55;background:var(--panel-soft);}
+  .level-card .ic{font-size:1.9em;flex:none;}
+  .level-card .body{flex:1;}
+  .level-card .body b{font-size:1.05em;}
+  .level-card .body .sub{color:var(--muted);font-size:.82em;}
+  .level-card .status{font-size:.8em;font-weight:800;white-space:nowrap;}
+  .level-card .status.ok{color:var(--star);}
+  .level-card .status.lock{color:var(--muted);}
+  .btn{
+    font-family:inherit;cursor:pointer;border:none;border-radius:14px;font-weight:800;
+    padding:14px 26px;font-size:1em;background:var(--accent);color:#fff;
+    box-shadow:0 4px 0 var(--accent-dark);transition:transform .08s;
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-dark);}
+  .btn.big{display:block;width:100%;margin-top:8px;font-size:1.15em;padding:18px;}
+  .btn.ghost{background:var(--panel);color:var(--accent-dark);border:2px solid var(--accent);box-shadow:none;}
+  .btn.ghost:active{transform:translateY(2px);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+  .btn-row{display:flex;gap:12px;margin-top:22px;align-items:center;flex-wrap:wrap;}
+  .btn-row .spacer{flex:1;}
+  /* ============ 關卡內：步驟進度 ============ */
+  .level-head{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .level-head .chip{background:var(--accent-soft);color:var(--accent-dark);border-radius:999px;padding:4px 14px;font-weight:800;font-size:.82em;}
+  .step-bar{display:flex;gap:6px;margin:14px 0 22px;}
+  .step-bar .seg{flex:1;height:9px;border-radius:5px;background:var(--line);}
+  .step-bar .seg.on{background:var(--accent);}
+  .step-bar .seg.cur{background:var(--star);}
+  .step-count{color:var(--muted);font-size:.82em;font-weight:700;margin-bottom:2px;}
+  /* ============ 課文閱讀卡 ============ */
+  .read-badge{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:.95em;padding:6px 16px;border-radius:999px;margin-bottom:14px;}
+  .season-春{background:#e6f4e7;color:#3a7a3f;} .season-夏{background:#e0efe6;color:#256b46;}
+  .season-秋{background:#fbf0d9;color:#a9741a;} .season-冬{background:#e7eef3;color:#4c6b7c;}
+  .season-none{background:var(--panel-soft);color:var(--muted);}
+  .passage{font-size:1.22em;line-height:2.2;letter-spacing:.03em;}
+  .term{
+    color:var(--accent-dark);font-weight:800;border-bottom:3px dotted var(--accent);
+    cursor:pointer;padding:0 2px;border-radius:4px;
+  }
+  .term:hover{background:var(--accent-soft);}
+  .read-tools{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+  .hint-line{color:var(--muted);font-size:.82em;margin-top:14px;}
+  /* 生詞小視窗 */
+  .term-pop{
+    margin-top:16px;background:var(--accent-soft);border:2px solid #bfe0d0;border-radius:14px;
+    padding:14px 18px;display:none;
+  }
+  .term-pop.show{display:block;animation:fade .25s;}
+  .term-pop .w{font-size:1.2em;font-weight:800;color:var(--accent-dark);}
+  /* ============ 語音朗讀鈕 ============ */
+  .tts{
+    display:inline-flex;align-items:center;gap:7px;border:2px solid var(--accent);
+    background:var(--panel);color:var(--accent-dark);border-radius:12px;padding:10px 16px;
+    font-weight:800;cursor:pointer;font-family:inherit;font-size:.9em;
+  }
+  .tts:hover{background:var(--accent-soft);}
+  .tts.speaking{background:var(--accent);color:#fff;}
+  /* ============ 生字卡 ============ */
+  .zi-card{text-align:center;}
+  .zi-big{font-size:5.2em;line-height:1.1;font-weight:800;color:var(--ink);
+    background:var(--panel-soft);border-radius:20px;padding:10px 0;position:relative;}
+  .zi-zhuyin{font-size:1.5em;color:var(--accent-dark);font-weight:800;margin-top:8px;letter-spacing:.1em;}
+  .zi-meta{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px;}
+  .zi-meta .m{background:var(--panel-soft);border:1px solid var(--line);border-radius:10px;padding:6px 14px;font-size:.82em;font-weight:700;color:var(--muted);}
+  .zi-meta .m b{color:var(--ink);}
+  .zi-word{margin-top:16px;font-size:1.15em;}
+  .zi-word .hl{color:var(--accent-dark);font-weight:800;}
+  /* 筆順動畫（田字格 + HanziWriter） */
+  .zi-writer-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:10px;}
+  .zi-tian{position:relative;width:204px;height:204px;background:#fff;border:2px solid var(--line);border-radius:14px;box-sizing:border-box;}
+  .zi-tian .cross-h{position:absolute;left:6px;right:6px;top:50%;border-top:1px dashed #d8d2c0;z-index:0;}
+  .zi-tian .cross-v{position:absolute;top:6px;bottom:6px;left:50%;border-left:1px dashed #d8d2c0;z-index:0;}
+  #ziWriter{position:absolute;inset:0;z-index:1;}
+  .zi-fallback{font-size:5em;font-weight:800;text-align:center;line-height:200px;color:var(--ink);}
+  .zi-quizmsg{min-height:1.3em;color:var(--accent-dark);font-weight:700;font-size:.9em;text-align:center;}
+  .zi-ctrl{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .btn2{font-family:inherit;cursor:pointer;border:2px solid var(--accent);background:var(--panel);
+    color:var(--accent-dark);border-radius:12px;padding:9px 15px;font-weight:800;font-size:.88em;}
+  .btn2:hover{background:var(--accent-soft);}
+  .btn2.on{background:var(--accent);color:#fff;}
+  /* ============ 單選題 ============ */
+  .q-text{font-size:1.25em;font-weight:800;line-height:1.7;margin-bottom:6px;}
+  .q-options{display:flex;flex-direction:column;gap:12px;margin-top:18px;}
+  .opt{
+    text-align:left;font-family:inherit;font-size:1.08em;font-weight:700;cursor:pointer;
+    background:var(--panel);border:2.5px solid var(--line);border-radius:16px;padding:16px 20px;
+    display:flex;align-items:center;gap:14px;transition:border-color .15s,background .15s;color:var(--ink);
+  }
+  .opt:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft);}
+  .opt .key{width:34px;height:34px;flex:none;border-radius:50%;background:var(--panel-soft);
+    border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--muted);}
+  .opt.correct{border-color:var(--ok);background:var(--ok-soft);}
+  .opt.correct .key{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .opt.wrong{border-color:var(--retry);background:var(--retry-soft);}
+  .opt.wrong .key{background:var(--retry);border-color:var(--retry);color:#fff;}
+  .opt:disabled{cursor:default;}
+  .feedback{margin-top:20px;border-radius:16px;padding:16px 20px;font-weight:700;display:none;font-size:1.02em;}
+  .feedback.show{display:block;animation:fade .3s;}
+  .feedback.good{background:var(--ok-soft);border:2px solid var(--ok);color:#2f7a4e;}
+  .feedback.try{background:var(--retry-soft);border:2px solid var(--retry);color:#a5641a;}
+  /* ============ 四季拖曳/配對心智圖 ============ */
+  .mindmap{position:relative;margin:10px auto 0;max-width:560px;}
+  .mm-center{text-align:center;background:var(--accent-soft);border:2px solid #bfe0d0;border-radius:18px;padding:14px;margin-bottom:16px;font-weight:800;color:var(--accent-dark);font-size:1.05em;}
+  .mm-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .mm-season{border-radius:16px;padding:16px;border:2px solid;background:var(--panel);}
+  .mm-season.s春{border-color:var(--spring);} .mm-season.s夏{border-color:var(--summer);}
+  .mm-season.s秋{border-color:var(--autumn);} .mm-season.s冬{border-color:var(--winter);}
+  .mm-season .t{font-weight:800;font-size:1.15em;display:flex;align-items:center;gap:8px;}
+  .mm-season.s春 .t{color:#3a7a3f;} .mm-season.s夏 .t{color:#256b46;}
+  .mm-season.s秋 .t{color:#a9741a;} .mm-season.s冬 .t{color:#4c6b7c;}
+  .mm-season .d{margin-top:8px;font-size:.95em;color:var(--ink);}
+  .mm-season .blank{color:var(--muted);font-style:normal;opacity:.6;}
+  /* ============ 反思輸入 ============ */
+  .frame-box{background:var(--panel-soft);border:2px dashed var(--accent);border-radius:14px;padding:14px 18px;margin:16px 0;font-size:1.1em;font-weight:700;color:var(--accent-dark);}
+  textarea.reflect{width:100%;min-height:90px;border:2px solid var(--line);border-radius:14px;padding:14px;font-family:inherit;font-size:1.05em;line-height:1.8;color:var(--ink);resize:vertical;background:var(--panel);}
+  textarea.reflect:focus{outline:none;border-color:var(--accent);}
+  /* ============ 完成慶祝 ============ */
+  .celebrate{text-align:center;}
+  .celebrate .big{font-size:3.4em;}
+  .celebrate h1{color:var(--accent-dark);font-size:1.7em;}
+  .stars-row{display:flex;justify-content:center;gap:10px;margin:16px 0;}
+  .stars-row .s{font-size:2.2em;}
+  .summary{text-align:left;background:var(--panel-soft);border-radius:16px;padding:18px 22px;margin:18px 0;}
+  .summary li{margin:6px 0;}
+  /* ============ 休息一下（自我調節） ============ */
+  .break-screen{text-align:center;padding:20px 0;}
+  .breath{width:150px;height:150px;border-radius:50%;background:var(--accent-soft);border:3px solid var(--accent);
+    margin:26px auto;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--accent-dark);font-size:1.05em;
+    animation:breathe 8s ease-in-out infinite;}
+  @keyframes breathe{0%,100%{transform:scale(.72);}50%{transform:scale(1);}}
+  /* ============ 頁尾品牌 ============ */
+  footer{text-align:center;color:var(--muted);font-size:.78em;padding:26px 16px 40px;}
+  footer .fb{display:inline-flex;align-items:center;gap:8px;opacity:.8;}
+  footer .badge{width:22px;height:22px;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important;}
+  }
+  @media(max-width:520px){
+    .mm-grid{grid-template-columns:1fr;}
+    .topbar .title{display:none;}
+  }
+  body.big1{--fs:1.12;} body.big2{--fs:1.28;}
+</style>
+<style id="xnav-style">
+.xnav{position:sticky;top:0;z-index:99999;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:linear-gradient(90deg,#2f7d62,#3f9d7c);padding:7px 10px;box-shadow:0 2px 10px rgba(0,0,0,.14);}
+.xnav a,.xnav span{color:#fff;text-decoration:none;font-weight:800;font-size:.82rem;line-height:1.2;font-family:inherit;}
+.xnav .side{flex:1 1 0;min-width:0;display:flex;}
+.xnav .side.r{justify-content:flex-end;}
+.xnav .xbtn{display:inline-flex;align-items:center;gap:5px;max-width:100%;background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.4);border-radius:10px;padding:6px 11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s;}
+.xnav .xbtn:hover{background:rgba(255,255,255,.32);}
+.xnav .xbtn.off{opacity:.38;pointer-events:none;}          /* 首課/末課的禁用灰階 */
+.xnav .xhome{flex:0 0 auto;background:#fff;color:#2f7d62;border-radius:999px;padding:8px 20px;font-size:.9rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.18);border:2px solid #fff;animation:xpulse 2.4s ease-in-out infinite;}
+.xnav .xhome:hover{background:#eafaf2;animation:none;}
+@keyframes xpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.55);}50%{box-shadow:0 0 0 7px rgba(255,255,255,0);}}
+.xnav .lab{opacity:.85;font-weight:700;}
+@media(max-width:600px){.xnav a,.xnav span{font-size:.72rem;}.xnav .xbtn{padding:5px 8px;}.xnav .lnum{display:none;}.xnav .xhome{font-size:.8rem;padding:7px 14px;}}
+@media (prefers-reduced-motion: reduce){.xnav .xhome{animation:none;}}
+</style>
+</head>
+<body>
+<nav class="xnav" aria-label="課間導覽"><div class="side l"><span class="xbtn off">◀ 已是第一課</span></div><a class="xhome" href="index.html" title="回到全冊總目錄，總覽十二課">🏠 回到總目錄</a><div class="side r"><a class="xbtn" href="L2.html" title="下一課：奶奶的排骨粥">奶奶的排骨粥&nbsp;<span class="lnum">L2</span><span>▶</span></a></div></nav>
+<header class="topbar">
+  <span class="brand"><svg class="badge" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#2f7d62"/><text x="20" y="27" font-size="22" fill="#eaf3e0" text-anchor="middle" font-family="'Microsoft JhengHei',sans-serif" font-weight="700">江</text></svg>JIANG</span>
+  <span class="title">窗口邊的臺灣欒樹</span>
+  <div class="prog" id="prog"></div>
+  <div class="tools">
+    <button class="tool-btn" id="btnFont" title="放大字">🔠 字級</button>
+    <button class="tool-btn" id="btnAudio" title="開關語音">🔊 語音</button>
+    <button class="tool-btn" id="btnBreak" title="休息一下">🌿 休息</button>
+    <button class="tool-btn" id="btnHome" title="回關卡地圖">🏠 地圖</button>
+  </div>
+</header>
+<main id="app"></main>
+<footer>
+  <span class="fb"><svg class="badge" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#2f7d62"/><text x="20" y="27" font-size="22" fill="#eaf3e0" text-anchor="middle" font-family="sans-serif" font-weight="700">江</text></svg>江 JIANG　結構化互動學習教材</span>
+  <div style="margin-top:6px;">課文《窗口邊的臺灣欒樹》文｜王素涼　為特殊教育課堂使用而製作</div>
+</footer>
+
+<!-- HanziWriter 筆順函式庫（MIT，作者 Jason Chris；資料 Make Me A Hanzi，LGPL/Arphic PL）內嵌、離線可用 -->
+<script>/**
+ * Hanzi Writer v3.7.3 | https://chanind.github.io/hanzi-writer
+ */
+
+var HanziWriter=function(){"use strict";var t,e,r;const i="undefined"==typeof window?global:window,s=i.performance&&(()=>i.performance.now())||(()=>Date.now()),o=(null===(t=i.requestAnimationFrame)||void 0===t?void 0:t.bind(i))||(t=>setTimeout(()=>t(s()),1e3/60)),n=(null===(e=i.cancelAnimationFrame)||void 0===e?void 0:e.bind(i))||clearTimeout;function a(t){return t[t.length-1]}const h=(t,e)=>t<0?e+t:t;function l(t,e){const r={...t};for(const i in e){const s=t[i],o=e[i];s!==o&&(s&&o&&"object"==typeof s&&"object"==typeof o&&!Array.isArray(o)?r[i]=l(s,o):r[i]=o)}return r}let c=0;function d(){return c++,c}function u(t){return t.reduce((t,e)=>e+t,0)/t.length}function _(t){const e=t.toUpperCase().trim();if(/^#([A-F0-9]{3}){1,2}$/.test(e)){let t=e.substring(1).split("");3===t.length&&(t=[t[0],t[0],t[1],t[1],t[2],t[2]]);const r=""+t.join("");return{r:parseInt(r.slice(0,2),16),g:parseInt(r.slice(2,4),16),b:parseInt(r.slice(4,6),16),a:1}}const r=e.match(/^RGBA?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*(\d*\.?\d+))?\)$/);if(r)return{r:parseInt(r[1],10),g:parseInt(r[2],10),b:parseInt(r[3],10),a:parseFloat(r[4]||1,10)};throw new Error("Invalid color: "+t)}function p(t,e){const r={};for(let i=0;i<e;i++)r[i]=t;return r}function g(t,e){const r={};for(let i=0;i<t;i++)r[i]=e(i);return r}const k=(null===(r=i.navigator)||void 0===r?void 0:r.userAgent)||"",m=k.indexOf("MSIE ")>0||k.indexOf("Trident/")>0||k.indexOf("Edge/")>0,f=()=>{};class v{constructor(t,e,r=f){this._mutationChains=[],this._onStateChange=r,this.state={options:{drawingFadeDuration:e.drawingFadeDuration,drawingWidth:e.drawingWidth,drawingColor:_(e.drawingColor),strokeColor:_(e.strokeColor),outlineColor:_(e.outlineColor),radicalColor:_(e.radicalColor||e.strokeColor),highlightColor:_(e.highlightColor)},character:{main:{opacity:e.showCharacter?1:0,strokes:{}},outline:{opacity:e.showOutline?1:0,strokes:{}},highlight:{opacity:1,strokes:{}}},userStrokes:null};for(let e=0;e<t.strokes.length;e++)this.state.character.main.strokes[e]={opacity:1,displayPortion:1},this.state.character.outline.strokes[e]={opacity:1,displayPortion:1},this.state.character.highlight.strokes[e]={opacity:0,displayPortion:1}}overwriteOnStateChange(t){this._onStateChange=t}updateState(t){const e=l(this.state,t);this._onStateChange(e,this.state),this.state=e}run(t,e={}){const r=t.map(t=>t.scope);return this.cancelMutations(r),new Promise(i=>{const s={_isActive:!0,_index:0,_resolve:i,_mutations:t,_loop:e.loop,_scopes:r};this._mutationChains.push(s),this._run(s)})}_run(t){if(!t._isActive)return;const e=t._mutations;if(t._index>=e.length){if(!t._loop)return t._isActive=!1,this._mutationChains=this._mutationChains.filter(e=>e!==t),void t._resolve({canceled:!1});t._index=0}t._mutations[t._index].run(this).then(()=>{t._isActive&&(t._index++,this._run(t))})}_getActiveMutations(){return this._mutationChains.map(t=>t._mutations[t._index])}pauseAll(){this._getActiveMutations().forEach(t=>t.pause())}resumeAll(){this._getActiveMutations().forEach(t=>t.resume())}cancelMutations(t){for(const e of this._mutationChains)for(const r of e._scopes)for(const i of t)(r.startsWith(i)||i.startsWith(r))&&this._cancelMutationChain(e)}cancelAll(){this.cancelMutations([""])}_cancelMutationChain(t){var e;t._isActive=!1;for(let e=t._index;e<t._mutations.length;e++)t._mutations[e].cancel(this);null===(e=t._resolve)||void 0===e||e.call(t,{canceled:!0}),this._mutationChains=this._mutationChains.filter(e=>e!==t)}}const y=(t,e)=>({x:t.x-e.x,y:t.y-e.y}),C=t=>Math.sqrt(Math.pow(t.x,2)+Math.pow(t.y,2)),S=(t,e)=>C(y(t,e)),w=(t,e=1)=>{const r=10*e;return{x:Math.round(r*t.x)/r,y:Math.round(r*t.y)/r}},P=t=>{let e=t[0];return t.slice(1).reduce((t,r)=>{const i=S(r,e);return e=r,t+i},0)},D=(t,e,r)=>{const i=y(e,t),s=r/C(i);return{x:e.x+s*i.x,y:e.y+s*i.y}},x=t=>{const e=((t,e=30)=>{const r=P(t)/(e-1),i=[t[0]],s=a(t),o=t.slice(1);for(let t=0;t<e-2;t++){let t=a(i),e=r,s=!1;for(;!s;){const r=S(t,o[0]);if(r<e)e-=r,t=o.shift();else{const n=D(t,o[0],e-r);i.push(n),s=!0}}}return i.push(s),i})(t),r={x:u(e.map(t=>t.x)),y:u(e.map(t=>t.y))},i=e.map(t=>y(t,r)),s=Math.sqrt(u([Math.pow(i[0].x,2)+Math.pow(i[0].y,2),Math.pow(a(i).x,2)+Math.pow(a(i).y,2)]));return((t,e=.05)=>{const r=t.slice(0,1);for(const i of t.slice(1)){const t=r[r.length-1],s=S(i,t);if(s>e){const o=Math.ceil(s/e),n=s/o;for(let e=0;e<o;e++)r.push(D(i,t,-1*n*(e+1)))}else r.push(i)}return r})(i.map(t=>({x:t.x/s,y:t.y/s})))};function M(t,e=!1){const r=w(t[0]),i=t.slice(1);let s=`M ${r.x} ${r.y}`;return i.forEach(t=>{const e=w(t);s+=` L ${e.x} ${e.y}`}),e&&(s+="Z"),s}const R=(t,e)=>{const r=(t=>{if(t.length<3)return t;const e=[t[0],t[1]];return t.slice(2).forEach(t=>{const r=e.length,i=y(t,e[r-1]),s=y(e[r-1],e[r-2]);i.y*s.x-i.x*s.y==0&&e.pop(),e.push(t)}),e})(t);if(r.length<2)return r;const i=r[1],s=r[0],o=D(i,s,e),n=r.slice(1);return n.unshift(o),n};class T{constructor(t,e,r,i=!1){this.path=t,this.points=e,this.strokeNum=r,this.isInRadical=i}getStartingPoint(){return this.points[0]}getEndingPoint(){return this.points[this.points.length-1]}getLength(){return P(this.points)}getVectors(){let t=this.points[0];return this.points.slice(1).map(e=>{const r=y(e,t);return t=e,r})}getDistance(t){const e=this.points.map(e=>S(e,t));return Math.min(...e)}getAverageDistance(t){return t.reduce((t,e)=>t+this.getDistance(e),0)/t.length}}class A{constructor(t,e){this.symbol=t,this.strokes=e}}function O({radStrokes:t,strokes:e,medians:r}){return e.map((e,i)=>{const s=r[i].map(t=>{const[e,r]=t;return{x:e,y:r}});return new T(e,s,i,(o=i,(null!==(n=null==t?void 0:t.indexOf(o))&&void 0!==n?n:-1)>=0));var o,n})}const[b,$]=[{x:0,y:-124},{x:1024,y:900}],z=$.x-b.x,L=$.y-b.y;class E{constructor(t){const{padding:e,width:r,height:i}=t;this.padding=e,this.width=r,this.height=i;const s=r-2*e,o=i-2*e,n=s/z,a=o/L;this.scale=Math.min(n,a);const h=e+(s-this.scale*z)/2,l=e+(o-this.scale*L)/2;this.xOffset=-1*b.x*this.scale+h,this.yOffset=-1*b.y*this.scale+l}convertExternalPoint(t){return{x:(t.x-this.xOffset)/this.scale,y:(this.height-this.yOffset-t.y)/this.scale}}}const W=(t,e)=>{const r=(t=>{const e=[];let r=t[0];return t.slice(1).forEach(t=>{e.push(y(t,r)),r=t}),e})(t),i=e.getVectors();return u(r.map(t=>{const e=i.map(e=>{return i=t,((r=e).x*i.x+r.y*i.y)/C(r)/C(i);var r,i});return Math.max(...e)}))>0},H=t=>{if(t.length<2)return t;const[e,...r]=t,i=[e];for(const t of r)s=t,o=i[i.length-1],(s.x!==o.x||s.y!==o.y)&&i.push(t);var s,o;return i},F=[Math.PI/16,Math.PI/32,0,-1*Math.PI/32,-1*Math.PI/16],I=(t,e,r)=>{const i=x(t),s=x(e);let o=1/0;return F.forEach(t=>{const e=((t,e)=>{const r=t.length>=e.length?t:e,i=t.length>=e.length?e:t,s=(t,e,s,o)=>{if(0===t&&0===e)return S(r[0],i[0]);if(t>0&&0===e)return Math.max(s[0],S(r[t],i[0]));const n=o[o.length-1];return 0===t&&e>0?Math.max(n,S(r[0],i[e])):Math.max(Math.min(s[e],s[e-1],n),S(r[t],i[e]))};let o=[];for(let t=0;t<r.length;t++){const e=[];for(let r=0;r<i.length;r++)e.push(s(t,r,o,e));o=e}return o[i.length-1]})(i,((t,e)=>t.map(t=>({x:Math.cos(e)*t.x-Math.sin(e)*t.y,y:Math.sin(e)*t.x+Math.cos(e)*t.y})))(s,t));e<o&&(o=e)}),o<=.4*r},B=(t,e,r)=>{const{leniency:i=1,isOutlineVisible:s=!1,checkBackwards:o=!0,averageDistanceThreshold:n=350}=r,a=e.getAverageDistance(t),h=a<=n*(s||e.strokeNum>0?.5:1)*i;if(!h)return{isMatch:!1,avgDist:a,meta:{isStrokeBackwards:!1}};const l=((t,e,r)=>{const i=S(e.getStartingPoint(),t[0]),s=S(e.getEndingPoint(),t[t.length-1]);return i<=250*r&&s<=250*r})(t,e,i),c=W(t,e),d=I(t,e.points,i),u=((t,e,r)=>r*(P(t)+25)/(e.getLength()+25)>=.35)(t,e,i),_=h&&l&&c&&d&&u;if(o&&!_){if(B([...t].reverse(),e,{...r,checkBackwards:!1}).isMatch)return{isMatch:_,avgDist:a,meta:{isStrokeBackwards:!0}}}return{isMatch:_,avgDist:a,meta:{isStrokeBackwards:!1}}};class q{constructor(t,e,r){this.id=t,this.points=[e],this.externalPoints=[r]}appendPoint(t,e){this.points.push(t),this.externalPoints.push(e)}}class N{constructor(t,e,r={}){this._tick=t=>{if(null!==this._startPauseTime)return;const e=Math.min(1,(t-this._startTime-this._pausedDuration)/this._duration);if(1===e)this._renderState.updateState(this._values),this._frameHandle=void 0,this.cancel(this._renderState);else{const t=V(e),r=j(this._startState,this._values,t);this._renderState.updateState(r),this._frameHandle=o(this._tick)}},this.scope=t,this._valuesOrCallable=e,this._duration=r.duration||0,this._force=r.force,this._pausedDuration=0,this._startPauseTime=null}run(t){return this._values||this._inflateValues(t),0===this._duration&&t.updateState(this._values),0===this._duration||U(t.state,this._values)?Promise.resolve():(this._renderState=t,this._startState=t.state,this._startTime=performance.now(),this._frameHandle=o(this._tick),new Promise(t=>{this._resolve=t}))}_inflateValues(t){let e=this._valuesOrCallable;"function"==typeof this._valuesOrCallable&&(e=this._valuesOrCallable(t.state)),this._values=function(t,e){const r=t.split("."),i={};let s=i;for(let t=0;t<r.length;t++){const i=t===r.length-1?e:{};s[r[t]]=i,s=i}return i}(this.scope,e)}pause(){null===this._startPauseTime&&(this._frameHandle&&n(this._frameHandle),this._startPauseTime=performance.now())}resume(){null!==this._startPauseTime&&(this._frameHandle=o(this._tick),this._pausedDuration+=performance.now()-this._startPauseTime,this._startPauseTime=null)}cancel(t){var e;null===(e=this._resolve)||void 0===e||e.call(this),this._resolve=void 0,n(this._frameHandle||-1),this._frameHandle=void 0,this._force&&(this._values||this._inflateValues(t),t.updateState(this._values))}}function j(t,e,r){const i={};for(const s in e){const o=e[s],n=null==t?void 0:t[s];i[s]="number"==typeof n&&"number"==typeof o&&o>=0?r*(o-n)+n:j(n,o,r)}return i}function U(t,e){for(const r in e){const i=e[r],s=null==t?void 0:t[r];if(i>=0){if(i!==s)return!1}else if(!U(s,i))return!1}return!0}N.Delay=class{constructor(t){this._duration=t,this._startTime=null,this._paused=!1,this.scope="delay."+t}run(){return this._startTime=s(),this._runningPromise=new Promise(t=>{this._resolve=t,this._timeout=setTimeout(()=>this.cancel(),this._duration)}),this._runningPromise}pause(){if(this._paused)return;const t=performance.now()-(this._startTime||0);this._duration=Math.max(0,this._duration-t),clearTimeout(this._timeout),this._paused=!0}resume(){this._paused&&(this._startTime=performance.now(),this._timeout=setTimeout(()=>this.cancel(),this._duration),this._paused=!1)}cancel(){clearTimeout(this._timeout),this._resolve&&this._resolve(),this._resolve=void 0}};const V=t=>-Math.cos(t*Math.PI)/2+.5,Q=(t,e,r)=>[new N(`character.${t}.strokes`,p({opacity:1,displayPortion:1},e.strokes.length),{duration:r,force:!0})],G=(t,e,r)=>[new N("character."+t,{opacity:1,strokes:p({opacity:1,displayPortion:1},e.strokes.length)},{duration:r,force:!0})],X=(t,e,r)=>[new N(`character.${t}.opacity`,0,{duration:r,force:!0}),...Q(t,e,0)],K=(t,e,r)=>[new N("options."+t,e,{duration:r})],Y=(t,e,r)=>{const i=t.strokeNum,s=(t.getLength()+600)/(3*r);return[new N("options.highlightColor",e),new N("character.highlight",{opacity:1,strokes:{[i]:{displayPortion:0,opacity:0}}}),new N("character.highlight.strokes."+i,{displayPortion:1,opacity:1},{duration:s}),new N(`character.highlight.strokes.${i}.opacity`,0,{duration:s,force:!0})]},J=(t,e,r)=>{const i=e.strokeNum,s=(e.getLength()+600)/(3*r);return[new N("character."+t,{opacity:1,strokes:{[i]:{displayPortion:0,opacity:1}}}),new N(`character.${t}.strokes.${i}.displayPortion`,1,{duration:s})]},Z=(t,e,r,i,s)=>{let o=X(t,e,r);return o=o.concat(Q(t,e,0)),o.push(new N("character."+t,{opacity:1,strokes:p({opacity:0},e.strokes.length)},{force:!0})),e.strokes.forEach((e,r)=>{r>0&&o.push(new N.Delay(s)),o=o.concat(J(t,e,i))}),o},tt=t=>(null==t?void 0:t.map(t=>new N("userStrokes."+t,null,{force:!0})))||[];class et{constructor(t,e,r){this._currentStrokeIndex=0,this._mistakesOnStroke=0,this._totalMistakes=0,this._character=t,this._renderState=e,this._isActive=!1,this._positioner=r}startQuiz(t){this._userStrokesIds&&this._renderState.run(tt(this._userStrokesIds)),this._userStrokesIds=[],this._isActive=!0,this._options=t;const e=h(t.quizStartStrokeNum,this._character.strokes.length);return this._currentStrokeIndex=Math.min(e,this._character.strokes.length-1),this._mistakesOnStroke=0,this._totalMistakes=0,this._renderState.run((r=this._character,i=t.strokeFadeDuration,s=this._currentStrokeIndex,[...X("main",r,i),new N("character.highlight",{opacity:1,strokes:p({opacity:0},r.strokes.length)},{force:!0}),new N("character.main",{opacity:1,strokes:g(r.strokes.length,t=>({opacity:t<s?1:0}))},{force:!0})]));var r,i,s}startUserStroke(t){var e;if(!this._isActive)return null;if(this._userStroke)return this.endUserStroke();const r=this._positioner.convertExternalPoint(t),i=d();return this._userStroke=new q(i,r,t),null===(e=this._userStrokesIds)||void 0===e||e.push(i),this._renderState.run(((t,e)=>[new N("quiz.activeUserStrokeId",t,{force:!0}),new N("userStrokes."+t,{points:[e],opacity:1},{force:!0})])(i,r))}continueUserStroke(t){if(!this._userStroke)return Promise.resolve();const e=this._positioner.convertExternalPoint(t);this._userStroke.appendPoint(e,t);const r=this._userStroke.points.slice(0);return this._renderState.run((i=this._userStroke.id,[new N(`userStrokes.${i}.points`,r,{force:!0})]));var i}setPositioner(t){this._positioner=t}endUserStroke(){var t,e,r;if(!this._userStroke)return;if(this._renderState.run((e=this._userStroke.id,r=null!==(t=this._options.drawingFadeDuration)&&void 0!==t?t:300,[new N(`userStrokes.${e}.opacity`,0,{duration:r})])),1===this._userStroke.points.length)return void(this._userStroke=void 0);const{acceptBackwardsStrokes:i,markStrokeCorrectAfterMisses:s}=this._options,o=this._getCurrentStroke(),{isMatch:n,meta:a}=function(t,e,r,i={}){const s=e.strokes,o=H(t.points);if(o.length<2)return{isMatch:!1,meta:{isStrokeBackwards:!1}};const{isMatch:n,meta:a,avgDist:h}=B(o,s[r],i);if(!n)return{isMatch:n,meta:a};const l=s.slice(r+1);let c=h;for(let t=0;t<l.length;t++){const{isMatch:e,avgDist:r}=B(o,l[t],{...i,checkBackwards:!1});e&&r<c&&(c=r)}if(c<h){const t=.6*(c+h)/(2*h),{isMatch:e,meta:n}=B(o,s[r],{...i,leniency:(i.leniency||1)*t});return{isMatch:e,meta:n}}return{isMatch:n,meta:a}}(this._userStroke,this._character,this._currentStrokeIndex,{isOutlineVisible:this._renderState.state.character.outline.opacity>0,leniency:this._options.leniency,averageDistanceThreshold:this._options.averageDistanceThreshold}),h=s&&this._mistakesOnStroke+1>=s;if(n||h||a.isStrokeBackwards&&i)this._handleSuccess(a);else{this._handleFailure(a);const{showHintAfterMisses:t,highlightColor:e,strokeHighlightSpeed:r}=this._options;!1!==t&&this._mistakesOnStroke>=t&&this._renderState.run(Y(o,_(e),r))}this._userStroke=void 0}cancel(){this._isActive=!1,this._userStrokesIds&&this._renderState.run(tt(this._userStrokesIds))}_getStrokeData({isCorrect:t,meta:e}){return{character:this._character.symbol,strokeNum:this._currentStrokeIndex,mistakesOnStroke:this._mistakesOnStroke,totalMistakes:this._totalMistakes,strokesRemaining:this._character.strokes.length-this._currentStrokeIndex-(t?1:0),drawnPath:(r=this._userStroke,{pathString:M(r.externalPoints),points:r.points.map(t=>w(t))}),isBackwards:e.isStrokeBackwards};var r}nextStroke(){if(!this._options)return;const{strokes:t,symbol:e}=this._character,{onComplete:r,highlightOnComplete:i,strokeFadeDuration:s,highlightCompleteColor:o,highlightColor:n,strokeHighlightDuration:a}=this._options;let h=(l="main",c=this._currentStrokeIndex,[new N(`character.${l}.strokes.${c}`,{displayPortion:1,opacity:1},{duration:s,force:!0})]);var l,c;this._mistakesOnStroke=0,this._currentStrokeIndex+=1;this._currentStrokeIndex===t.length&&(this._isActive=!1,null==r||r({character:e,totalMistakes:this._totalMistakes}),i&&(h=h.concat(((t,e,r)=>[new N("options.highlightColor",e),...X("highlight",t),...G("highlight",t,r/2),...X("highlight",t,r/2)])(this._character,_(o||n),2*(a||0))))),this._renderState.run(h)}_handleSuccess(t){if(!this._options)return;const{onCorrectStroke:e}=this._options;null==e||e({...this._getStrokeData({isCorrect:!0,meta:t})}),this.nextStroke()}_handleFailure(t){var e,r;this._mistakesOnStroke+=1,this._totalMistakes+=1,null===(e=(r=this._options).onMistake)||void 0===e||e.call(r,this._getStrokeData({isCorrect:!1,meta:t}))}_getCurrentStroke(){return this._character.strokes[this._currentStrokeIndex]}}function rt(t){return document.createElementNS("http://www.w3.org/2000/svg",t)}function it(t,e,r){t.setAttributeNS(null,e,r)}function st(t,e){Object.keys(e).forEach(r=>it(t,r,e[r]))}function ot(t){var e;null==t||null===(e=t.parentNode)||void 0===e||e.removeChild(t)}class nt{constructor(t){this.stroke=t,this._pathLength=t.getLength()+nt.STROKE_WIDTH/2}_getStrokeDashoffset(t){return.999*this._pathLength*(1-t)}_getColor({strokeColor:t,radicalColor:e}){return e&&this.stroke.isInRadical?e:t}}nt.STROKE_WIDTH=200;class at extends nt{constructor(t){super(t),this._oldProps=void 0}mount(t){this._animationPath=rt("path"),this._clip=rt("clipPath"),this._strokePath=rt("path");const e="mask-"+d();it(this._clip,"id",e),it(this._strokePath,"d",this.stroke.path),this._animationPath.style.opacity="0",it(this._animationPath,"clip-path",function(t){let e="";return window.location&&window.location.href&&(e=window.location.href.replace(/#[^#]*$/,"").replace(/"/gi,"%22")),`url("${e}#${t}")`}(e));const r=R(this.stroke.points,100);return it(this._animationPath,"d",M(r)),st(this._animationPath,{stroke:"#FFFFFF","stroke-width":200..toString(),fill:"none","stroke-linecap":"round","stroke-linejoin":"miter","stroke-dasharray":`${this._pathLength},${this._pathLength}`}),this._clip.appendChild(this._strokePath),t.defs.appendChild(this._clip),t.svg.appendChild(this._animationPath),this}render(t){var e,r;if(t===this._oldProps||!this._animationPath)return;t.displayPortion!==(null===(e=this._oldProps)||void 0===e?void 0:e.displayPortion)&&(this._animationPath.style.strokeDashoffset=this._getStrokeDashoffset(t.displayPortion).toString());const i=this._getColor(t);if(!this._oldProps||i!==this._getColor(this._oldProps)){const{r:t,g:e,b:r,a:s}=i;st(this._animationPath,{stroke:`rgba(${t},${e},${r},${s})`})}t.opacity!==(null===(r=this._oldProps)||void 0===r?void 0:r.opacity)&&(this._animationPath.style.opacity=t.opacity.toString()),this._oldProps=t}}class ht{constructor(t){this._oldProps=void 0,this._strokeRenderers=t.strokes.map(t=>new at(t))}mount(t){const e=t.createSubRenderTarget();this._group=e.svg,this._strokeRenderers.forEach(t=>{t.mount(e)})}render(t){var e,r;if(t===this._oldProps||!this._group)return;const{opacity:i,strokes:s,strokeColor:o,radicalColor:n=null}=t;var a;i!==(null===(e=this._oldProps)||void 0===e?void 0:e.opacity)&&(this._group.style.opacity=i.toString(),m||(0===i?this._group.style.display="none":0===(null===(a=this._oldProps)||void 0===a?void 0:a.opacity)&&this._group.style.removeProperty("display")));const h=!this._oldProps||o!==this._oldProps.strokeColor||n!==this._oldProps.radicalColor;if(h||s!==(null===(r=this._oldProps)||void 0===r?void 0:r.strokes))for(let t=0;t<this._strokeRenderers.length;t++){var l;!h&&null!==(l=this._oldProps)&&void 0!==l&&l.strokes&&s[t]===this._oldProps.strokes[t]||this._strokeRenderers[t].render({strokeColor:o,radicalColor:n,opacity:s[t].opacity,displayPortion:s[t].displayPortion})}this._oldProps=t}}class lt{constructor(){this._oldProps=void 0}mount(t){this._path=rt("path"),t.svg.appendChild(this._path)}render(t){var e,r,i,s;if(this._path&&t!==this._oldProps){if(t.strokeColor!==(null===(e=this._oldProps)||void 0===e?void 0:e.strokeColor)||t.strokeWidth!==(null===(r=this._oldProps)||void 0===r?void 0:r.strokeWidth)){const{r:e,g:r,b:i,a:s}=t.strokeColor;st(this._path,{fill:"none",stroke:`rgba(${e},${r},${i},${s})`,"stroke-width":t.strokeWidth.toString(),"stroke-linecap":"round","stroke-linejoin":"round"})}t.opacity!==(null===(i=this._oldProps)||void 0===i?void 0:i.opacity)&&it(this._path,"opacity",t.opacity.toString()),t.points!==(null===(s=this._oldProps)||void 0===s?void 0:s.points)&&it(this._path,"d",M(t.points)),this._oldProps=t}}destroy(){ot(this._path)}}class ct{constructor(t){this.node=t}addPointerStartListener(t){this.node.addEventListener("mousedown",e=>{t(this._eventify(e,this._getMousePoint))}),this.node.addEventListener("touchstart",e=>{t(this._eventify(e,this._getTouchPoint))})}addPointerMoveListener(t){this.node.addEventListener("mousemove",e=>{t(this._eventify(e,this._getMousePoint))}),this.node.addEventListener("touchmove",e=>{t(this._eventify(e,this._getTouchPoint))})}addPointerEndListener(t){document.addEventListener("mouseup",t),document.addEventListener("touchend",t)}getBoundingClientRect(){return this.node.getBoundingClientRect()}updateDimensions(t,e){this.node.setAttribute("width",""+t),this.node.setAttribute("height",""+e)}_eventify(t,e){return{getPoint:()=>e.call(this,t),preventDefault:()=>t.preventDefault()}}_getMousePoint(t){const{left:e,top:r}=this.getBoundingClientRect();return{x:t.clientX-e,y:t.clientY-r}}_getTouchPoint(t){const{left:e,top:r}=this.getBoundingClientRect();return{x:t.touches[0].clientX-e,y:t.touches[0].clientY-r}}}class dt extends ct{constructor(t,e){super(t),this.svg=t,this.defs=e,"createSVGPoint"in t&&(this._pt=t.createSVGPoint())}static init(t,e="100%",r="100%"){const i="string"==typeof t?document.getElementById(t):t;if(!i)throw new Error("HanziWriter target element not found: "+t);const s=i.nodeName.toUpperCase(),o=(()=>{if("SVG"===s||"G"===s)return i;{const t=rt("svg");return i.appendChild(t),t}})();st(o,{width:e,height:r});const n=rt("defs");return o.appendChild(n),new dt(o,n)}createSubRenderTarget(){const t=rt("g");return this.svg.appendChild(t),new dt(t,this.defs)}_getMousePoint(t){if(this._pt&&(this._pt.x=t.clientX,this._pt.y=t.clientY,"getScreenCTM"in this.node)){var e;const t=this._pt.matrixTransform(null===(e=this.node.getScreenCTM())||void 0===e?void 0:e.inverse());return{x:t.x,y:t.y}}return super._getMousePoint.call(this,t)}_getTouchPoint(t){if(this._pt&&(this._pt.x=t.touches[0].clientX,this._pt.y=t.touches[0].clientY,"getScreenCTM"in this.node)){var e;const t=this._pt.matrixTransform(null===(e=this.node.getScreenCTM())||void 0===e?void 0:e.inverse());return{x:t.x,y:t.y}}return super._getTouchPoint(t)}}var ut={HanziWriterRenderer:class{constructor(t,e){this._character=t,this._positioner=e,this._mainCharRenderer=new ht(t),this._outlineCharRenderer=new ht(t),this._highlightCharRenderer=new ht(t),this._userStrokeRenderers={}}mount(t){const e=t.createSubRenderTarget(),r=e.svg,{xOffset:i,yOffset:s,height:o,scale:n}=this._positioner;it(r,"transform",`translate(${i}, ${o-s}) scale(${n}, ${-1*n})`),this._outlineCharRenderer.mount(e),this._mainCharRenderer.mount(e),this._highlightCharRenderer.mount(e),this._positionedTarget=e}render(t){const{main:e,outline:r,highlight:i}=t.character,{outlineColor:s,radicalColor:o,highlightColor:n,strokeColor:a,drawingWidth:h,drawingColor:l}=t.options;this._outlineCharRenderer.render({opacity:r.opacity,strokes:r.strokes,strokeColor:s}),this._mainCharRenderer.render({opacity:e.opacity,strokes:e.strokes,strokeColor:a,radicalColor:o}),this._highlightCharRenderer.render({opacity:i.opacity,strokes:i.strokes,strokeColor:n});const c=t.userStrokes||{};for(const t in this._userStrokeRenderers){var d;if(!c[t])null===(d=this._userStrokeRenderers[t])||void 0===d||d.destroy(),delete this._userStrokeRenderers[t]}for(const t in c){const e=c[t];if(!e)continue;const r={strokeWidth:h,strokeColor:l,...e};(()=>{if(this._userStrokeRenderers[t])return this._userStrokeRenderers[t];const e=new lt;return e.mount(this._positionedTarget),this._userStrokeRenderers[t]=e,e})().render(r)}}destroy(){ot(this._positionedTarget.svg),this._positionedTarget.defs.innerHTML=""}},createRenderTarget:dt.init};const _t=(t,e)=>{t.beginPath();const r=e[0],i=e.slice(1);t.moveTo(r.x,r.y);for(const e of i)t.lineTo(e.x,e.y);t.stroke()};class pt extends nt{constructor(t,e=!0){super(t),e&&Path2D?this._path2D=new Path2D(this.stroke.path):this._pathCmd=(t=>{const e=t.split(/(^|\s+)(?=[A-Z])/).filter(t=>" "!==t),r=[t=>t.beginPath()];for(const t of e){const[e,...i]=t.split(/\s+/),s=i.map(t=>parseFloat(t));"M"===e?r.push(t=>t.moveTo(...s)):"L"===e?r.push(t=>t.lineTo(...s)):"C"===e?r.push(t=>t.bezierCurveTo(...s)):"Q"===e&&r.push(t=>t.quadraticCurveTo(...s))}return t=>r.forEach(e=>e(t))})(this.stroke.path),this._extendedMaskPoints=R(this.stroke.points,nt.STROKE_WIDTH/2)}render(t,e){if(e.opacity<.05)return;var r;(t.save(),this._path2D)?t.clip(this._path2D):(null===(r=this._pathCmd)||void 0===r||r.call(this,t),t.globalAlpha=0,t.stroke(),t.clip());const{r:i,g:s,b:o,a:n}=this._getColor(e),a=1===n?`rgb(${i},${s},${o})`:`rgb(${i},${s},${o},${n})`,h=this._getStrokeDashoffset(e.displayPortion);t.globalAlpha=e.opacity,t.strokeStyle=a,t.fillStyle=a,t.lineWidth=nt.STROKE_WIDTH,t.lineCap="round",t.lineJoin="round",t.setLineDash([this._pathLength,this._pathLength],h),t.lineDashOffset=h,_t(t,this._extendedMaskPoints),t.restore()}}class gt{constructor(t){this._strokeRenderers=t.strokes.map(t=>new pt(t))}render(t,e){if(e.opacity<.05)return;const{opacity:r,strokeColor:i,radicalColor:s,strokes:o}=e;for(let e=0;e<this._strokeRenderers.length;e++)this._strokeRenderers[e].render(t,{strokeColor:i,radicalColor:s,opacity:o[e].opacity*r,displayPortion:o[e].displayPortion||0})}}function kt(t,e){if(e.opacity<.05)return;const{opacity:r,strokeWidth:i,strokeColor:s,points:o}=e,{r:n,g:a,b:h,a:l}=s;t.save(),t.globalAlpha=r,t.lineWidth=i,t.strokeStyle=`rgba(${n},${a},${h},${l})`,t.lineCap="round",t.lineJoin="round",_t(t,o),t.restore()}class mt extends ct{constructor(t){super(t)}static init(t,e="100%",r="100%"){const i="string"==typeof t?document.getElementById(t):t;if(!i)throw new Error("HanziWriter target element not found: "+t);const s=i.nodeName.toUpperCase(),o=(()=>{if("CANVAS"===s)return i;const t=document.createElement("canvas");return i.appendChild(t),t})();return o.setAttribute("width",e),o.setAttribute("height",r),new mt(o)}getContext(){return this.node.getContext("2d")}}var ft={HanziWriterRenderer:class{constructor(t,e){this.destroy=f,this._character=t,this._positioner=e,this._mainCharRenderer=new gt(t),this._outlineCharRenderer=new gt(t),this._highlightCharRenderer=new gt(t)}mount(t){this._target=t}_animationFrame(t){const{width:e,height:r,scale:i,xOffset:s,yOffset:o}=this._positioner,n=this._target.getContext();n.clearRect(0,0,e,r),n.save(),n.translate(s,r-o),n.transform(1,0,0,-1,0,0),n.scale(i,i),t(n),n.restore(),n.draw&&n.draw()}render(t){const{outline:e,main:r,highlight:i}=t.character,{outlineColor:s,strokeColor:o,radicalColor:n,highlightColor:a,drawingColor:h,drawingWidth:l}=t.options;this._animationFrame(c=>{this._outlineCharRenderer.render(c,{opacity:e.opacity,strokes:e.strokes,strokeColor:s}),this._mainCharRenderer.render(c,{opacity:r.opacity,strokes:r.strokes,strokeColor:o,radicalColor:n}),this._highlightCharRenderer.render(c,{opacity:i.opacity,strokes:i.strokes,strokeColor:a});const d=t.userStrokes||{};for(const t in d){const e=d[t];if(e){kt(c,{strokeWidth:l,strokeColor:h,...e})}}})}},createRenderTarget:mt.init};const vt={charDataLoader:(t,e,r)=>{const i=new XMLHttpRequest;i.overrideMimeType&&i.overrideMimeType("application/json"),i.open("GET",(t=>`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/${t}.json`)(t),!0),i.onerror=t=>{r(i,t)},i.onreadystatechange=()=>{4===i.readyState&&(200===i.status?e(JSON.parse(i.responseText)):0!==i.status&&r&&r(i))},i.send(null)},onLoadCharDataError:null,onLoadCharDataSuccess:null,showOutline:!0,showCharacter:!0,renderer:"svg",width:0,height:0,padding:20,strokeAnimationSpeed:1,strokeFadeDuration:400,strokeHighlightDuration:200,strokeHighlightSpeed:2,delayBetweenStrokes:1e3,delayBetweenLoops:2e3,strokeColor:"#555",radicalColor:null,highlightColor:"#AAF",outlineColor:"#DDD",drawingColor:"#333",leniency:1,showHintAfterMisses:3,highlightOnComplete:!0,highlightCompleteColor:null,markStrokeCorrectAfterMisses:!1,acceptBackwardsStrokes:!1,quizStartStrokeNum:0,averageDistanceThreshold:350,drawingFadeDuration:300,drawingWidth:4,strokeWidth:2,outlineWidth:2,rendererOverride:{}};class yt{constructor(t){this._loadCounter=0,this._isLoading=!1,this.loadingFailed=!1,this._options=t}_debouncedLoad(t,e){const r=t=>{var r;e===this._loadCounter&&(null===(r=this._resolve)||void 0===r||r.call(this,t))},i=t=>{var r;e===this._loadCounter&&(null===(r=this._reject)||void 0===r||r.call(this,t))},s=this._options.charDataLoader(t,r,i);s&&("then"in s?s.then(r).catch(i):r(s))}_setupLoadingPromise(){return new Promise((t,e)=>{this._resolve=t,this._reject=e}).then(t=>{var e,r;return this._isLoading=!1,null===(e=(r=this._options).onLoadCharDataSuccess)||void 0===e||e.call(r,t),t}).catch(t=>{if(this._isLoading=!1,this.loadingFailed=!0,this._options.onLoadCharDataError)return void this._options.onLoadCharDataError(t);if(t instanceof Error)throw t;const e=new Error("Failed to load char data for "+this._loadingChar);throw e.reason=t,e})}loadCharData(t){this._loadingChar=t;const e=this._setupLoadingPromise();return this.loadingFailed=!1,this._isLoading=!0,this._loadCounter++,this._debouncedLoad(t,this._loadCounter),e}}class Ct{constructor(t,e={}){const{HanziWriterRenderer:r,createRenderTarget:i}="canvas"===e.renderer?ft:ut,s=e.rendererOverride||{};this._renderer={HanziWriterRenderer:s.HanziWriterRenderer||r,createRenderTarget:s.createRenderTarget||i},this.target=this._renderer.createRenderTarget(t,e.width,e.height),this._options=this._assignOptions(e),this._loadingManager=new yt(this._options),this._setupListeners()}static create(t,e,r){const i=new Ct(t,r);return i.setCharacter(e),i}static loadCharacterData(t,e={}){const r=(()=>{const{_loadingManager:r,_loadingOptions:i}=Ct;return(null==r?void 0:r._loadingChar)===t&&i===e?r:new yt({...vt,...e})})();return Ct._loadingManager=r,Ct._loadingOptions=e,r.loadCharData(t)}static getScalingTransform(t,e,r=0){const i=new E({width:t,height:e,padding:r});return{x:i.xOffset,y:i.yOffset,scale:i.scale,transform:(s=`\n        translate(${i.xOffset}, ${i.height-i.yOffset})\n        scale(${i.scale}, ${-1*i.scale})\n      `,s.replace(/^\s+/,"").replace(/\s+$/,"")).replace(/\s+/g," ")};var s}showCharacter(t={}){return this._options.showCharacter=!0,this._withData(()=>{var e;return null===(e=this._renderState)||void 0===e?void 0:e.run(G("main",this._character,"number"==typeof t.duration?t.duration:this._options.strokeFadeDuration)).then(e=>{var r;return null===(r=t.onComplete)||void 0===r||r.call(t,e),e})})}hideCharacter(t={}){return this._options.showCharacter=!1,this._withData(()=>{var e;return null===(e=this._renderState)||void 0===e?void 0:e.run(X("main",this._character,"number"==typeof t.duration?t.duration:this._options.strokeFadeDuration)).then(e=>{var r;return null===(r=t.onComplete)||void 0===r||r.call(t,e),e})})}animateCharacter(t={}){return this.cancelQuiz(),this._withData(()=>{var e;return null===(e=this._renderState)||void 0===e?void 0:e.run(Z("main",this._character,this._options.strokeFadeDuration,this._options.strokeAnimationSpeed,this._options.delayBetweenStrokes)).then(e=>{var r;return null===(r=t.onComplete)||void 0===r||r.call(t,e),e})})}animateStroke(t,e={}){return this.cancelQuiz(),this._withData(()=>{var r;return null===(r=this._renderState)||void 0===r?void 0:r.run(((t,e,r,i)=>{const s=e.strokes[r];return[new N("character."+t,r=>{const i=r.character[t],s={opacity:1,strokes:{}};for(let t=0;t<e.strokes.length;t++)s.strokes[t]={opacity:i.opacity*i.strokes[t].opacity};return s}),...J(t,s,i)]})("main",this._character,h(t,this._character.strokes.length),this._options.strokeAnimationSpeed)).then(t=>{var r;return null===(r=e.onComplete)||void 0===r||r.call(e,t),t})})}highlightStroke(t,e={}){return this._withData(()=>{var r,i;if(this._character&&this._renderState)return this._renderState.run(Y((r=this._character.strokes,i=t,r[h(i,r.length)]),_(this._options.highlightColor),this._options.strokeHighlightSpeed)).then(t=>{var r;return null===(r=e.onComplete)||void 0===r||r.call(e,t),t})})}async loopCharacterAnimation(){return this.cancelQuiz(),this._withData(()=>this._renderState.run(((t,e,r,i,s,o)=>{const n=Z(t,e,r,i,s);return n.push(new N.Delay(o)),n})("main",this._character,this._options.strokeFadeDuration,this._options.strokeAnimationSpeed,this._options.delayBetweenStrokes,this._options.delayBetweenLoops),{loop:!0}))}pauseAnimation(){return this._withData(()=>{var t;return null===(t=this._renderState)||void 0===t?void 0:t.pauseAll()})}resumeAnimation(){return this._withData(()=>{var t;return null===(t=this._renderState)||void 0===t?void 0:t.resumeAll()})}showOutline(t={}){return this._options.showOutline=!0,this._withData(()=>{var e;return null===(e=this._renderState)||void 0===e?void 0:e.run(G("outline",this._character,"number"==typeof t.duration?t.duration:this._options.strokeFadeDuration)).then(e=>{var r;return null===(r=t.onComplete)||void 0===r||r.call(t,e),e})})}hideOutline(t={}){return this._options.showOutline=!1,this._withData(()=>{var e;return null===(e=this._renderState)||void 0===e?void 0:e.run(X("outline",this._character,"number"==typeof t.duration?t.duration:this._options.strokeFadeDuration)).then(e=>{var r;return null===(r=t.onComplete)||void 0===r||r.call(t,e),e})})}updateDimensions({width:t,height:e,padding:r}){if(void 0!==t&&(this._options.width=t),void 0!==e&&(this._options.height=e),void 0!==r&&(this._options.padding=r),this.target.updateDimensions(this._options.width,this._options.height),this._character&&this._renderState&&this._hanziWriterRenderer&&this._positioner){this._hanziWriterRenderer.destroy();const t=this._initAndMountHanziWriterRenderer(this._character);this._renderState.overwriteOnStateChange(e=>t.render(e)),t.render(this._renderState.state),this._quiz&&this._quiz.setPositioner(this._positioner)}}updateColor(t,e,r={}){var i;let s=[];const o=_((()=>"radicalColor"!==t||e?e:this._options.strokeColor)());this._options[t]=e;const n=null!==(i=r.duration)&&void 0!==i?i:this._options.strokeFadeDuration;return s=s.concat(K(t,o,n)),"radicalColor"!==t||e||(s=s.concat(K(t,null,0))),this._withData(()=>{var t;return null===(t=this._renderState)||void 0===t?void 0:t.run(s).then(t=>{var e;return null===(e=r.onComplete)||void 0===e||e.call(r,t),t})})}quiz(t={}){return this._withData(async()=>{this._character&&this._renderState&&this._positioner&&(this.cancelQuiz(),this._quiz=new et(this._character,this._renderState,this._positioner),this._options={...this._options,...t},this._quiz.startQuiz(this._options))})}skipQuizStroke(){this._quiz&&this._quiz.nextStroke()}cancelQuiz(){this._quiz&&(this._quiz.cancel(),this._quiz=void 0)}setCharacter(t){return this.cancelQuiz(),this._char=t,this._hanziWriterRenderer&&this._hanziWriterRenderer.destroy(),this._renderState&&this._renderState.cancelAll(),this._hanziWriterRenderer=null,this._withDataPromise=this._loadingManager.loadCharData(t).then(e=>{if(!e||this._loadingManager.loadingFailed)return;this._character=function(t,e){const r=O(e);return new A(t,r)}(t,e),this._renderState=new v(this._character,this._options,t=>r.render(t));const r=this._initAndMountHanziWriterRenderer(this._character);r.render(this._renderState.state)}),this._withDataPromise}_initAndMountHanziWriterRenderer(t){const{width:e,height:r,padding:i}=this._options;this._positioner=new E({width:e,height:r,padding:i});const s=new this._renderer.HanziWriterRenderer(t,this._positioner);return s.mount(this.target),this._hanziWriterRenderer=s,s}async getCharacterData(){if(!this._char)throw new Error("setCharacter() must be called before calling getCharacterData()");return await this._withData(()=>this._character)}_assignOptions(t){const e={...vt,...t};return t.strokeAnimationDuration&&!t.strokeAnimationSpeed&&(e.strokeAnimationSpeed=500/t.strokeAnimationDuration),t.strokeHighlightDuration&&!t.strokeHighlightSpeed&&(e.strokeHighlightSpeed=500/e.strokeHighlightDuration),t.highlightCompleteColor||(e.highlightCompleteColor=e.highlightColor),this._fillWidthAndHeight(e)}_fillWidthAndHeight(t){const e={...t};if(e.width&&!e.height)e.height=e.width;else if(e.height&&!e.width)e.width=e.height;else if(!e.width&&!e.height){const{width:t,height:r}=this.target.getBoundingClientRect(),i=Math.min(t,r);e.width=i,e.height=i}return e}_withData(t){if(this._loadingManager.loadingFailed)throw Error("Failed to load character data. Call setCharacter and try again.");return this._withDataPromise?this._withDataPromise.then(()=>{if(!this._loadingManager.loadingFailed)return t()}):Promise.resolve().then(t)}_setupListeners(){this.target.addPointerStartListener(t=>{this._quiz&&(t.preventDefault(),this._quiz.startUserStroke(t.getPoint()))}),this.target.addPointerMoveListener(t=>{this._quiz&&(t.preventDefault(),this._quiz.continueUserStroke(t.getPoint()))}),this.target.addPointerEndListener(()=>{var t;null===(t=this._quiz)||void 0===t||t.endUserStroke()})}}return Ct._loadingManager=null,Ct._loadingOptions=null,Ct}();
+//# sourceMappingURL=hanzi-writer.min.js.map
+
+//# sourceURL=hanzi-writer.min.js
+</script>
+<script>window.HANZI_DATA={"素":{"strokes":["M 539 700 Q 710 733 713 734 Q 722 741 718 749 Q 712 761 686 768 Q 659 775 631 766 Q 586 753 542 742 L 483 730 Q 417 721 342 717 Q 308 713 331 697 Q 368 673 420 682 Q 451 688 485 692 L 539 700 Z","M 530 595 Q 692 628 694 628 Q 701 634 698 642 Q 692 652 668 660 Q 643 666 616 657 Q 574 645 533 635 L 486 626 Q 422 616 349 611 Q 318 607 339 592 Q 369 573 442 582 Q 463 586 486 588 L 530 595 Z","M 524 525 Q 527 561 530 595 L 533 635 Q 534 669 539 700 L 542 742 Q 543 763 556 801 Q 559 811 540 825 Q 507 844 485 848 Q 469 851 462 843 Q 455 836 462 822 Q 481 797 481 779 Q 482 755 483 730 L 485 692 Q 486 661 486 626 L 486 588 Q 485 557 485 520 C 485 490 521 495 524 525 Z","M 470 488 Q 579 503 905 502 Q 926 502 930 511 Q 937 523 919 537 Q 859 583 796 565 Q 690 547 524 525 L 485 520 Q 319 504 125 483 Q 103 482 119 463 Q 134 448 152 442 Q 174 436 191 441 Q 302 469 428 483 L 470 488 Z","M 504 342 Q 447 346 400 348 Q 379 349 391 362 Q 436 402 476 430 Q 492 442 491 449 Q 491 461 470 488 C 452 512 434 512 428 483 Q 422 438 347 372 Q 299 356 326 307 Q 333 297 345 301 Q 376 314 475 319 C 505 321 534 340 504 342 Z","M 524 220 Q 523 221 525 221 Q 595 237 667 246 C 697 250 681 266 651 264 Q 552 257 438 238 Q 425 237 435 244 Q 481 281 587 352 Q 624 380 653 394 Q 668 400 664 411 Q 660 433 633 459 Q 620 472 611 472 Q 601 471 598 456 Q 592 420 512 347 Q 508 346 504 342 L 475 319 Q 366 244 358 239 Q 342 233 341 218 Q 340 205 360 182 Q 367 169 384 176 Q 439 201 494 214 L 524 220 Z","M 667 246 Q 697 207 711 204 Q 720 203 725 213 Q 731 225 728 249 Q 727 270 699 291 Q 630 330 620 327 Q 616 324 615 313 Q 616 304 635 283 Q 642 274 651 264 L 667 246 Z","M 494 214 Q 506 187 507 48 Q 506 45 505 42 Q 501 29 477 32 Q 452 38 423 42 Q 413 43 411 37 Q 410 31 420 22 Q 481 -26 503 -55 Q 518 -68 528 -65 Q 538 -61 549 -29 Q 565 2 562 60 Q 559 120 560 142 Q 567 179 550 199 Q 535 214 524 220 C 499 237 485 243 494 214 Z","M 319 142 Q 294 99 261 61 Q 239 31 251 -3 Q 255 -21 277 -11 Q 328 20 337 84 Q 346 115 342 139 Q 338 148 333 150 Q 324 149 319 142 Z","M 653 129 Q 701 84 758 19 Q 774 -2 789 -6 Q 798 -7 805 3 Q 818 16 805 59 Q 793 110 654 160 Q 645 164 643 153 Q 642 140 653 129 Z"],"medians":[[[334,708],[356,701],[409,700],[549,720],[654,747],[688,749],[710,743]],[[342,603],[382,596],[430,598],[541,614],[639,640],[669,642],[692,636]],[[474,833],[516,797],[506,548],[491,527]],[[122,473],[173,463],[535,512],[823,536],[869,532],[917,518]],[[436,476],[452,451],[382,381],[356,340],[391,330],[464,330],[496,342]],[[612,460],[622,418],[550,352],[417,255],[407,239],[406,223],[440,218],[630,252],[649,254],[660,247]],[[622,318],[688,265],[712,217]],[[502,214],[519,199],[533,165],[535,50],[529,20],[514,-5],[419,35]],[[332,140],[311,81],[266,0]],[[654,148],[763,65],[779,42],[790,10]]],"radStrokes":[4,5,6,7,8,9]},"嫩":{"strokes":["M 210 448 Q 231 542 248 639 Q 255 681 270 703 Q 280 722 273 733 Q 260 748 219 770 Q 201 780 187 772 Q 177 765 185 752 Q 218 707 173 441 L 167 404 Q 163 389 161 373 Q 151 321 129 281 Q 122 262 139 247 Q 179 225 211 195 L 239 170 Q 264 148 293 117 Q 306 104 315 102 Q 322 102 328 112 Q 334 121 330 148 Q 324 179 264 211 L 231 229 Q 210 241 184 254 Q 165 264 168 282 Q 186 348 202 414 L 210 448 Z","M 211 195 Q 163 132 83 72 Q 73 65 83 63 Q 149 63 237 167 Q 237 170 239 170 L 264 211 Q 300 286 309 344 Q 321 431 335 457 Q 342 472 328 479 Q 291 509 268 499 Q 258 495 263 483 Q 269 473 272 460 L 274 436 Q 274 316 231 229 L 211 195 Z","M 272 460 Q 241 454 210 448 L 173 441 Q 128 435 84 427 Q 68 423 41 427 Q 31 427 29 419 Q 26 409 32 402 Q 48 387 72 370 Q 79 366 90 372 Q 126 391 163 403 Q 164 404 167 404 L 202 414 Q 235 426 274 436 C 303 444 301 466 272 460 Z","M 522 604 Q 618 631 621 634 Q 628 641 624 649 Q 617 659 589 665 Q 553 671 523 651 L 485 637 Q 475 636 467 632 Q 428 622 382 615 Q 349 608 374 593 Q 413 575 486 595 L 522 604 Z","M 392 488 Q 383 492 360 495 Q 351 498 348 493 Q 344 489 350 476 Q 372 436 387 367 Q 390 346 403 333 Q 418 317 421 328 Q 422 334 423 341 L 421 369 Q 421 370 421 373 Q 408 442 405 464 C 402 484 402 484 392 488 Z","M 604 395 Q 626 464 653 483 Q 666 498 655 511 Q 598 556 549 531 Q 534 525 521 519 L 486 509 Q 440 497 392 488 C 363 482 376 458 405 464 Q 414 465 424 469 Q 452 476 485 483 L 521 491 Q 537 495 557 500 Q 573 504 581 498 Q 590 486 566 404 C 558 375 595 367 604 395 Z","M 520 357 Q 557 364 610 369 Q 619 370 620 378 Q 620 384 604 395 C 587 407 587 407 566 404 Q 539 400 520 391 L 483 382 Q 449 375 421 369 C 392 363 393 342 423 341 Q 430 340 441 342 Q 453 346 471 348 L 520 357 Z","M 482 290 Q 482 179 456 88 Q 447 51 470 -4 Q 477 -20 484 -23 Q 490 -29 496 -22 Q 503 -18 512 2 Q 521 24 520 53 Q 519 92 520 357 L 520 391 Q 520 437 521 491 L 521 519 Q 521 561 522 604 L 523 651 Q 527 714 540 760 Q 547 773 545 786 Q 539 795 488 825 Q 467 841 448 826 Q 444 822 449 808 Q 483 757 484 707 Q 484 674 485 637 L 486 595 Q 486 553 486 509 L 485 483 Q 484 434 483 382 L 482 290 Z","M 471 348 Q 429 261 339 141 Q 335 134 344 133 Q 348 132 356 139 Q 431 202 482 290 C 525 363 484 375 471 348 Z","M 558 257 Q 580 238 603 216 Q 612 207 623 207 Q 630 208 634 217 Q 637 227 631 247 Q 627 262 604 274 Q 553 295 540 290 Q 536 287 537 279 Q 540 272 558 257 Z","M 728 511 Q 731 518 735 524 Q 766 582 796 666 Q 808 705 821 725 Q 827 737 820 748 Q 813 758 783 774 Q 755 784 738 781 Q 722 775 733 757 Q 778 700 648 425 Q 641 415 640 408 Q 639 398 652 402 Q 670 411 714 485 L 728 511 Z","M 797 490 Q 831 500 934 518 Q 946 519 946 526 Q 946 536 926 549 Q 887 565 839 542 Q 818 536 728 511 C 699 503 685 493 714 485 Q 732 479 760 483 L 797 490 Z","M 773 231 Q 774 235 778 239 Q 802 284 811 337 Q 821 409 839 445 Q 848 461 833 469 Q 814 484 797 490 C 770 502 750 511 760 483 Q 760 480 762 476 Q 796 407 742 268 L 725 230 Q 676 160 638 127 Q 634 126 632 123 Q 584 89 580 86 Q 568 77 579 75 Q 663 75 750 188 L 773 231 Z","M 750 188 Q 789 128 825 78 Q 835 60 857 59 Q 972 59 982 70 Q 986 74 978 79 Q 843 157 781 222 Q 777 226 773 231 L 742 268 Q 673 352 668 354 Q 646 357 640 350 Q 637 346 644 340 Q 671 321 686 293 Q 705 260 725 230 L 750 188 Z"],"medians":[[[194,761],[216,745],[234,714],[195,459],[148,269],[166,247],[287,164],[307,138],[314,114]],[[271,489],[284,483],[303,461],[291,357],[265,258],[227,184],[190,140],[129,90],[88,68]],[[41,413],[80,398],[248,441],[261,445],[265,453]],[[375,605],[441,605],[529,627],[560,641],[615,643]],[[355,488],[377,469],[383,456],[413,333]],[[400,484],[411,479],[475,492],[574,521],[596,516],[617,494],[595,429],[589,418],[575,415]],[[427,348],[437,357],[561,384],[611,378]],[[459,819],[498,783],[508,761],[501,229],[487,73],[489,-10]],[[478,343],[463,292],[439,254],[348,141]],[[544,283],[606,245],[620,221]],[[742,768],[768,749],[781,727],[772,682],[748,605],[709,513],[685,464],[648,410]],[[722,489],[743,500],[868,530],[914,534],[936,528]],[[767,481],[794,464],[805,449],[788,334],[772,280],[734,204],[690,149],[643,109],[585,80]],[[647,347],[676,329],[766,205],[861,102],[977,73]]],"radStrokes":[0,1,2]},"繁":{"strokes":["M 267 703 Q 282 719 296 737 L 308 756 Q 323 778 337 797 Q 344 807 334 817 Q 301 842 283 840 Q 274 839 276 827 Q 285 764 218 690 Q 203 677 197 665 Q 190 655 202 657 Q 217 660 254 691 L 267 703 Z","M 296 737 Q 330 725 395 737 Q 432 744 475 754 Q 500 760 503 763 Q 510 769 506 775 Q 502 784 479 789 Q 457 793 434 785 Q 406 775 375 767 Q 344 761 308 756 C 278 752 267 746 296 737 Z","M 294 684 Q 285 694 272 702 Q 269 703 267 703 C 247 713 247 713 254 691 Q 269 661 249 586 L 237 551 Q 225 517 189 483 Q 176 473 177 462 Q 180 450 193 438 Q 205 426 221 439 Q 266 476 391 465 L 432 462 Q 442 462 454 459 Q 467 455 476 461 Q 485 464 480 475 Q 467 499 446 504 L 406 504 Q 373 504 355 500 L 343 499 Q 303 495 249 485 Q 242 484 244 494 Q 257 525 270 558 L 282 591 Q 292 621 301 653 C 307 672 307 672 294 684 Z","M 476 619 Q 488 665 509 685 Q 522 692 513 701 Q 506 710 478 718 Q 463 722 448 712 Q 376 685 294 684 C 264 683 271 651 301 653 Q 311 653 320 655 Q 321 656 328 657 L 349 663 Q 401 678 429 680 Q 439 681 441 677 Q 451 673 443 640 Q 439 627 436 614 L 428 579 Q 416 533 406 504 L 391 465 Q 391 455 396 439 Q 403 418 421 438 Q 425 447 432 462 L 446 504 Q 455 537 467 583 L 476 619 Z","M 384 622 Q 381 637 349 663 C 326 682 316 685 328 657 Q 338 633 350 611 Q 353 605 357 601 C 377 579 381 576 384 606 Q 385 613 384 622 Z","M 467 583 Q 483 584 502 586 Q 515 587 516 592 Q 517 602 504 611 Q 489 618 476 619 L 436 614 Q 408 611 384 606 L 357 601 Q 314 597 282 591 L 249 586 Q 87 573 86 571 Q 85 570 84 568 Q 81 561 93 550 Q 120 526 157 533 Q 200 545 237 551 L 270 558 Q 292 564 313 566 L 331 568 Q 376 575 428 579 L 467 583 Z","M 359 504 Q 363 510 363 524 Q 362 537 331 568 C 310 589 307 592 313 566 Q 313 565 314 562 Q 330 507 343 499 C 349 494 349 494 355 500 Q 356 501 359 504 Z","M 630 688 Q 646 713 665 745 Q 678 770 689 782 Q 696 791 692 801 Q 688 811 664 827 Q 642 840 627 839 Q 612 836 620 820 Q 635 792 587 695 Q 565 650 531 601 Q 524 592 523 587 Q 520 578 532 581 Q 541 582 559 602 L 575 618 Q 590 636 616 669 L 630 688 Z","M 735 667 Q 861 695 867 700 Q 874 707 871 714 Q 864 724 839 730 Q 823 733 746 711 Q 632 690 630 688 C 601 680 595 678 616 669 Q 652 651 698 659 L 735 667 Z","M 646 516 Q 616 482 543 448 Q 531 444 540 438 Q 607 432 673 484 L 700 515 Q 712 530 743 592 Q 749 608 760 621 Q 770 633 760 643 Q 748 655 735 667 C 713 687 696 689 698 659 Q 704 623 667 547 Q 666 546 666 544 L 646 516 Z","M 559 602 Q 586 589 646 516 L 673 484 Q 712 442 775 389 Q 796 376 846 384 Q 927 405 931 406 Q 937 412 927 419 Q 915 425 817 453 Q 772 465 700 515 L 666 544 Q 636 569 605 601 Q 593 614 575 618 C 547 628 534 618 559 602 Z","M 510 291 Q 452 300 406 306 Q 391 309 401 316 Q 461 359 513 389 Q 528 398 528 404 Q 529 414 511 447 Q 504 462 489 464 Q 480 465 481 452 Q 481 419 398 351 Q 380 335 351 325 Q 335 318 333 309 Q 332 294 339 277 Q 343 267 355 269 Q 374 275 487 275 C 517 275 540 286 510 291 Z","M 531 179 Q 594 194 657 203 C 687 207 676 221 646 219 Q 549 212 431 190 Q 425 189 429 193 Q 583 304 643 328 Q 656 332 655 344 Q 651 363 626 391 Q 614 404 605 404 Q 595 404 593 389 Q 583 353 510 291 L 487 275 Q 370 194 355 188 Q 340 184 340 170 Q 339 158 358 135 Q 365 122 380 130 Q 440 158 498 172 L 531 179 Z","M 657 203 Q 690 160 696 158 Q 703 157 710 165 Q 716 175 715 197 Q 712 227 643 266 Q 633 270 628 270 Q 624 269 623 259 L 646 219 L 657 203 Z","M 498 172 Q 504 154 505 25 Q 504 22 503 20 Q 499 7 478 12 Q 451 19 423 26 Q 413 26 411 21 Q 410 15 419 7 Q 479 -42 498 -71 Q 511 -84 522 -82 Q 532 -79 543 -49 Q 559 -19 558 36 Q 557 88 557 108 Q 564 145 549 163 Q 539 173 531 179 C 508 198 492 201 498 172 Z","M 324 116 Q 299 79 266 49 Q 242 22 252 -10 Q 256 -28 277 -20 Q 323 2 337 60 Q 347 88 346 112 Q 343 119 338 122 Q 329 123 324 116 Z","M 648 98 Q 687 62 732 10 Q 747 -9 761 -14 Q 770 -15 777 -6 Q 789 7 777 49 Q 770 86 708 109 Q 671 122 649 128 Q 642 132 639 121 Q 638 108 648 98 Z"],"medians":[[[287,829],[305,802],[278,742],[239,692],[204,664]],[[302,740],[383,751],[458,771],[495,771]],[[262,689],[271,687],[279,672],[276,626],[222,476],[239,469],[309,482],[373,485],[445,483],[467,471]],[[302,678],[313,669],[430,694],[472,687],[409,441]],[[335,653],[349,645],[376,610]],[[88,568],[96,561],[137,554],[458,600],[492,601],[507,595]],[[318,565],[344,528],[348,510]],[[628,828],[656,793],[646,766],[597,673],[530,588]],[[624,670],[744,688],[835,711],[861,709]],[[705,655],[728,634],[727,628],[708,575],[671,513],[615,467],[562,446],[554,448],[548,441]],[[565,604],[585,601],[703,485],[791,422],[833,414],[928,412]],[[492,453],[497,412],[390,328],[375,302],[397,290],[469,287],[475,282],[502,291]],[[606,391],[614,352],[499,261],[412,203],[400,175],[425,170],[583,203],[642,210],[650,204]],[[634,261],[692,196],[700,168]],[[504,171],[525,153],[531,132],[532,27],[520,-12],[511,-24],[505,-23],[419,19]],[[334,111],[311,59],[267,-8]],[[650,116],[731,61],[752,33],[763,1]]],"radStrokes":[11,12,13,14,15,16]},"墨":{"strokes":["M 303 781 Q 293 785 264 786 Q 251 787 249 783 Q 243 776 254 761 Q 288 704 317 608 Q 324 580 343 562 Q 362 543 366 558 Q 367 562 367 567 L 365 597 Q 362 609 359 622 Q 332 716 324 749 C 317 777 317 777 303 781 Z","M 619 596 Q 631 571 643 562 Q 653 552 672 570 Q 688 588 738 695 Q 751 725 779 746 Q 794 756 784 773 Q 771 792 732 824 Q 714 836 654 825 Q 581 819 303 781 C 273 777 295 743 324 749 Q 381 762 460 774 L 497 778 Q 558 788 633 795 Q 678 799 692 784 Q 699 769 695 757 Q 656 654 644 639 Q 638 629 626 628 C 607 617 607 617 619 596 Z","M 382 695 Q 400 662 421 649 Q 430 646 437 653 Q 441 660 442 671 Q 441 687 430 696 Q 400 726 377 721 Q 373 721 374 713 Q 374 706 382 695 Z","M 587 725 Q 574 706 548 676 Q 544 672 547 668 Q 551 667 557 669 Q 608 699 632 710 Q 642 711 641 719 Q 638 729 627 741 Q 615 753 601 755 Q 592 755 592 743 Q 593 736 587 725 Z","M 520 588 Q 563 594 619 596 C 649 597 651 611 626 628 Q 613 641 581 634 Q 548 628 521 621 L 480 613 Q 419 604 365 597 C 335 593 339 556 367 567 Q 373 574 480 584 L 520 588 Z","M 516 420 Q 516 451 517 481 L 518 523 Q 518 557 520 588 L 521 621 Q 522 663 524 701 Q 527 752 524 757 Q 511 770 497 778 C 472 794 449 802 460 774 L 461 772 Q 476 739 480 657 Q 480 639 480 613 L 480 584 Q 479 554 479 515 L 478 475 Q 478 448 478 415 C 478 385 516 390 516 420 Z","M 517 481 Q 578 490 632 495 Q 657 498 649 512 Q 639 528 612 534 Q 578 540 518 523 L 479 515 Q 421 505 369 494 Q 350 490 371 474 Q 384 464 410 467 Q 444 471 478 475 L 517 481 Z","M 478 415 Q 375 405 255 392 Q 236 391 250 374 Q 280 347 312 355 Q 433 385 706 386 Q 719 386 736 385 Q 754 385 758 392 Q 762 402 749 416 Q 698 453 644 440 Q 590 433 516 420 L 478 415 Z","M 171 312 Q 149 269 119 232 Q 97 202 113 165 Q 120 147 142 159 Q 191 192 193 253 Q 200 286 194 311 Q 190 320 184 321 Q 175 320 171 312 Z","M 332 283 Q 365 238 388 223 Q 400 219 408 229 Q 414 239 413 252 Q 410 271 398 282 Q 379 300 345 311 Q 333 317 326 314 Q 320 314 321 304 Q 322 295 332 283 Z","M 561 311 Q 601 260 629 246 Q 639 243 648 253 Q 654 263 652 276 Q 645 309 573 340 Q 561 344 553 342 Q 549 341 550 332 Q 550 323 561 311 Z","M 766 314 Q 817 272 877 212 Q 893 193 909 189 Q 918 188 925 199 Q 937 212 922 255 Q 909 294 843 319 Q 827 328 766 345 Q 756 349 755 337 Q 755 324 766 314 Z","M 521 136 Q 683 158 689 162 Q 698 169 694 177 Q 688 189 662 197 Q 638 203 524 178 L 475 169 Q 409 162 335 161 Q 301 158 324 141 Q 354 117 433 126 Q 454 129 477 130 L 521 136 Z","M 514 28 Q 518 85 521 136 L 524 178 Q 524 182 525 187 Q 528 206 530 220 Q 539 247 522 261 Q 494 276 474 279 Q 461 282 454 275 Q 448 268 455 256 Q 470 235 475 169 L 477 130 Q 478 81 479 25 C 480 -5 512 -2 514 28 Z","M 479 25 Q 352 18 206 5 Q 184 4 199 -14 Q 212 -27 230 -34 Q 251 -41 267 -37 Q 489 11 805 -11 Q 805 -10 808 -11 Q 827 -12 833 -4 Q 839 8 823 22 Q 772 64 735 57 Q 653 44 514 28 L 479 25 Z"],"medians":[[[258,777],[286,757],[298,738],[355,563]],[[315,781],[332,768],[426,785],[667,812],[716,800],[737,764],[728,744],[679,639],[655,603],[634,621]],[[383,714],[419,678],[427,662]],[[631,720],[611,725],[552,671]],[[371,576],[387,587],[603,616],[617,624]],[[468,770],[498,744],[501,713],[498,443],[483,423]],[[370,484],[402,483],[566,511],[614,514],[637,507]],[[253,383],[303,375],[402,390],[668,415],[704,412],[749,397]],[[182,309],[165,247],[129,171]],[[331,305],[382,262],[394,239]],[[558,335],[613,290],[633,263]],[[766,333],[874,264],[896,237],[910,206]],[[327,152],[356,144],[421,143],[632,175],[684,172]],[[464,267],[499,234],[498,53],[484,33]],[[202,-4],[258,-15],[386,2],[734,25],[770,22],[822,3]]],"radStrokes":[12,13,14]},"姿":{"strokes":["M 273 715 Q 298 694 324 670 Q 337 658 351 660 Q 361 660 365 672 Q 369 685 360 713 Q 354 731 327 743 Q 258 765 248 759 Q 244 755 245 743 Q 249 733 273 715 Z","M 219 471 Q 209 471 207 456 Q 210 389 231 373 Q 235 366 244 367 Q 251 367 255 387 Q 265 417 365 578 Q 372 590 373 595 Q 374 602 366 599 Q 353 593 251 492 Q 241 482 219 471 Z","M 509 686 Q 521 714 561 789 Q 570 801 555 813 Q 510 840 489 833 Q 479 830 483 817 Q 505 739 425 624 Q 406 599 396 583 Q 390 568 403 574 Q 439 586 494 662 L 509 686 Z","M 494 662 Q 512 646 535 652 Q 590 671 653 684 Q 686 691 696 688 Q 706 681 702 675 Q 702 666 649 603 Q 642 596 645 588 Q 648 584 661 592 Q 764 647 808 657 Q 818 658 820 666 Q 821 679 795 696 Q 774 711 754 726 Q 729 742 714 737 Q 636 707 509 686 C 479 681 469 679 494 662 Z","M 456 398 Q 517 429 551 509 Q 552 513 554 515 L 563 535 Q 569 556 585 573 Q 595 586 584 596 Q 551 632 530 629 Q 518 628 521 615 Q 533 573 493 494 Q 454 428 359 384 Q 347 380 356 375 Q 374 372 430 385 L 456 398 Z","M 554 515 Q 611 448 673 387 Q 692 368 724 368 Q 782 367 843 380 Q 859 381 860 386 Q 861 392 849 396 Q 812 408 770 419 Q 722 432 686 454 Q 641 476 596 510 Q 577 526 563 535 C 538 552 534 538 554 515 Z","M 457 285 Q 479 324 490 335 Q 500 342 497 352 Q 493 365 458 396 Q 457 397 456 398 C 434 418 426 415 430 385 Q 437 363 428 339 Q 416 308 404 281 L 389 248 Q 371 215 354 194 Q 344 176 345 164 Q 346 154 364 149 Q 434 131 472 105 L 520 78 Q 583 39 675 -33 Q 700 -54 717 -53 Q 739 -53 739 -33 Q 739 -14 710 32 Q 698 54 669 67 Q 605 97 551 118 L 502 137 Q 448 159 409 169 Q 390 173 401 191 Q 422 228 437 253 L 457 285 Z","M 647 305 Q 641 323 609 336 Q 590 346 571 345 Q 558 342 564 327 Q 570 314 569 296 L 566 262 Q 542 184 502 137 L 472 105 Q 394 42 237 4 Q 219 -3 239 -7 Q 407 -32 520 78 L 551 118 Q 593 172 615 235 Q 619 251 626 263 C 638 290 648 303 647 305 Z","M 626 263 Q 717 266 833 261 Q 866 260 895 259 Q 916 258 921 267 Q 928 279 911 294 Q 854 339 789 325 Q 726 318 647 305 L 569 296 Q 530 296 457 285 L 404 281 Q 271 271 122 258 Q 100 257 115 239 Q 130 224 148 217 Q 170 211 186 215 Q 282 237 389 248 L 437 253 Q 440 254 445 254 Q 499 260 566 262 L 626 263 Z"],"medians":[[[252,754],[321,713],[351,675]],[[241,377],[237,403],[243,444],[367,593]],[[492,823],[522,791],[515,759],[473,663],[430,606],[405,583]],[[504,664],[678,706],[723,706],[745,680],[711,643],[649,595]],[[530,619],[541,610],[553,583],[514,483],[462,425],[417,396],[361,378]],[[565,528],[594,493],[704,406],[745,396],[853,389]],[[451,391],[462,349],[372,173],[394,158],[459,135],[539,96],[620,52],[671,20],[720,-35]],[[573,334],[605,299],[592,251],[552,162],[503,99],[448,56],[399,30],[315,6],[248,0]],[[118,249],[177,238],[468,273],[802,295],[863,290],[909,274]]],"radStrokes":[6,7,8]},"簇":{"strokes":["M 330 700 Q 354 745 366 757 Q 372 761 370 772 Q 363 796 323 806 Q 302 810 293 807 Q 284 804 288 793 Q 306 748 235 637 Q 232 636 232 633 Q 213 603 160 543 Q 153 537 163 536 Q 235 558 316 677 L 330 700 Z","M 316 677 Q 355 661 394 671 Q 440 680 486 688 Q 508 692 511 696 Q 518 703 515 710 Q 508 720 483 726 Q 471 729 382 708 Q 357 704 330 700 C 300 696 288 688 316 677 Z","M 334 591 Q 350 575 366 554 Q 376 544 388 543 Q 397 543 401 553 Q 405 563 401 587 Q 395 608 333 628 Q 321 632 316 630 Q 312 629 312 618 Q 315 609 334 591 Z","M 636 738 Q 652 763 669 786 Q 679 798 665 811 Q 629 841 603 838 Q 593 837 594 823 Q 607 742 523 650 Q 504 628 493 615 Q 486 602 499 605 Q 514 608 533 622 Q 588 662 621 713 L 636 738 Z","M 621 713 Q 660 701 724 709 Q 763 716 804 723 Q 826 727 830 730 Q 839 737 835 745 Q 828 755 802 763 Q 774 769 747 759 Q 720 752 692 745 Q 665 741 636 738 C 606 735 592 721 621 713 Z","M 640 620 Q 692 575 705 576 Q 714 577 717 588 Q 721 601 712 625 Q 703 646 634 659 Q 621 660 616 659 Q 612 655 614 645 Q 617 636 640 620 Z","M 282 478 Q 318 430 334 427 Q 343 426 349 437 Q 355 449 350 476 Q 346 498 283 519 Q 270 523 264 523 Q 260 520 259 509 Q 260 499 282 478 Z","M 310 344 Q 347 354 388 361 Q 431 371 439 377 Q 446 384 442 391 Q 436 400 413 406 Q 392 409 288 378 Q 164 354 127 350 Q 97 346 118 331 Q 148 315 227 328 Q 249 332 275 337 L 310 344 Z","M 318 282 Q 324 279 340 274 Q 364 268 372 255 Q 381 234 342 125 Q 323 80 305 72 Q 296 69 275 75 Q 247 91 242 86 Q 238 79 251 69 Q 275 36 278 15 Q 281 2 290 -3 Q 300 -7 328 8 Q 370 41 399 158 Q 408 207 430 229 Q 440 232 441 239 Q 442 246 425 268 Q 401 296 360 297 Q 347 301 333 306 C 305 316 290 293 318 282 Z","M 333 306 Q 333 321 310 344 C 290 366 274 367 275 337 L 276 335 Q 276 275 187 158 Q 159 125 93 70 Q 87 67 84 63 Q 78 56 87 54 Q 129 54 195 112 Q 250 163 314 275 Q 315 279 318 282 C 333 308 333 304 333 306 Z","M 544 483 Q 578 540 576 548 Q 573 551 571 554 Q 540 578 517 575 Q 508 572 510 561 Q 523 504 452 413 Q 448 409 444 402 Q 438 389 450 394 Q 475 397 527 458 L 544 483 Z","M 527 458 Q 567 446 637 460 Q 688 470 741 482 Q 771 489 776 494 Q 783 501 779 509 Q 772 519 745 526 Q 718 530 691 519 Q 657 507 620 497 Q 584 490 544 483 C 514 478 498 466 527 458 Z","M 542 349 Q 546 358 563 379 Q 567 389 565 396 Q 561 405 540 406 Q 518 407 509 404 Q 505 401 505 391 Q 505 357 457 282 Q 445 267 464 275 Q 482 278 532 336 L 542 349 Z","M 622 325 Q 760 359 763 361 Q 770 368 767 375 Q 760 384 737 389 Q 712 393 689 383 Q 658 373 626 364 Q 589 355 546 350 Q 543 350 542 349 C 521 345 521 345 532 336 Q 547 321 581 321 L 622 325 Z","M 655 192 Q 872 198 878 205 Q 878 206 879 206 Q 883 216 869 228 Q 821 262 767 249 Q 715 239 637 225 L 585 218 Q 518 211 443 199 Q 424 198 438 183 Q 450 171 465 166 Q 484 162 497 166 Q 534 176 577 182 L 655 192 Z","M 637 225 Q 643 261 657 282 Q 666 297 652 305 Q 637 317 622 325 C 596 340 571 349 581 321 Q 581 318 583 314 Q 596 287 585 218 L 577 182 Q 531 65 451 15 Q 438 6 424 -3 Q 414 -10 423 -13 Q 468 -17 532 35 Q 601 89 626 185 L 637 225 Z","M 626 185 Q 683 91 758 -8 Q 785 -35 923 -14 Q 930 -11 932 -7 Q 933 -3 921 5 Q 800 60 710 141 Q 683 165 655 192 C 626 219 610 211 626 185 Z"],"medians":[[[300,797],[327,766],[291,682],[231,600],[167,542]],[[325,679],[339,686],[370,686],[455,704],[504,705]],[[320,622],[376,582],[388,557]],[[605,827],[631,793],[605,731],[565,671],[502,614]],[[628,717],[645,724],[697,725],[771,741],[824,740]],[[620,651],[687,615],[704,588]],[[267,514],[317,476],[327,465],[335,440]],[[120,342],[148,337],[214,343],[398,385],[431,386]],[[325,286],[339,289],[379,276],[396,263],[403,243],[358,100],[336,61],[309,37],[246,82]],[[284,330],[302,310],[272,245],[228,178],[176,118],[135,85],[92,61]],[[523,563],[542,538],[531,504],[495,445],[452,402]],[[534,462],[551,469],[624,476],[737,505],[768,503]],[[554,391],[531,381],[512,338],[465,283]],[[539,336],[631,344],[720,370],[759,370]],[[440,191],[482,184],[779,224],[814,225],[874,210]],[[588,319],[622,287],[609,211],[586,142],[560,95],[534,63],[474,12],[429,-9]],[[635,184],[651,174],[731,82],[791,25],[864,3],[925,-7]]],"radStrokes":[0,1,2,3,4,5]},"週":{"strokes":["M 451 735 Q 441 742 425 746 Q 407 753 397 747 Q 387 740 394 728 Q 431 691 418 462 Q 414 429 408 398 Q 390 314 339 208 Q 335 202 334 196 Q 333 186 342 190 Q 351 191 382 236 Q 475 372 471 616 Q 468 670 471 697 C 473 724 473 724 451 735 Z","M 471 697 Q 534 718 724 746 Q 743 749 752 738 Q 765 731 769 674 Q 782 481 770 262 Q 769 229 757 221 Q 747 212 690 221 Q 674 225 674 215 Q 675 208 688 200 Q 740 157 765 123 Q 787 102 800 105 Q 813 108 825 137 Q 843 185 842 254 Q 827 543 829 650 Q 830 690 842 713 Q 855 735 844 747 Q 834 762 787 787 Q 766 799 691 776 Q 573 749 451 735 C 421 731 442 689 471 697 Z","M 618 581 Q 646 590 679 596 Q 704 603 708 607 Q 714 613 711 619 Q 705 628 683 632 Q 653 638 621 619 L 578 605 Q 542 598 505 592 Q 477 586 498 575 Q 528 557 574 571 Q 575 572 580 572 L 618 581 Z","M 613 523 Q 614 553 618 581 L 621 619 Q 624 652 632 677 Q 633 684 620 695 Q 595 708 577 711 Q 565 714 560 707 Q 554 703 561 691 Q 573 675 578 605 L 580 572 Q 581 544 581 514 C 581 484 612 493 613 523 Z","M 581 514 Q 562 511 546 508 Q 527 505 506 502 Q 484 498 502 486 Q 521 471 561 477 Q 630 493 700 503 Q 707 502 714 512 Q 715 521 697 528 Q 676 543 613 523 L 581 514 Z","M 532 409 Q 525 413 504 416 Q 495 417 492 414 Q 488 410 494 397 Q 515 355 528 287 Q 531 266 543 253 Q 556 237 561 248 Q 565 260 563 281 L 559 308 Q 549 366 548 385 C 547 403 547 403 532 409 Z","M 685 318 Q 701 364 718 378 Q 740 400 720 414 Q 704 424 680 441 Q 665 450 621 430 Q 590 420 532 409 C 503 403 519 377 548 385 Q 560 389 625 399 Q 646 402 651 394 L 639 327 C 634 297 675 290 685 318 Z","M 563 281 Q 573 281 585 282 Q 618 289 690 294 Q 699 295 700 302 Q 700 308 685 318 L 639 327 Q 635 327 633 326 Q 591 316 559 308 C 530 301 533 281 563 281 Z","M 226 708 Q 250 683 275 654 Q 288 639 306 639 Q 318 639 325 653 Q 331 669 323 702 Q 319 721 288 738 Q 218 769 200 763 Q 194 759 195 745 Q 198 732 226 708 Z","M 244 189 Q 245 190 249 194 Q 271 207 279 231 Q 288 271 244 325 Q 213 370 288 455 Q 292 462 300 468 Q 322 487 303 502 Q 282 518 248 533 Q 226 546 189 516 Q 111 468 79 469 Q 72 470 70 464 Q 69 460 77 455 Q 116 439 200 475 Q 207 479 216 471 Q 234 450 212 415 Q 161 358 201 317 Q 237 257 237 232 Q 238 213 234 202 Q 230 195 233 189 C 232 179 232 179 244 189 Z","M 233 189 Q 182 189 140 176 Q 100 163 72 159 Q 57 158 60 147 Q 63 137 105 114 Q 124 107 153 126 Q 184 162 252 155 Q 327 143 495 70 Q 540 52 580 31 Q 724 -41 778 -29 Q 868 -7 970 50 Q 977 53 975 59 Q 974 63 958 64 Q 616 58 374 151 Q 272 199 244 189 L 233 189 Z"],"medians":[[[404,736],[432,713],[442,683],[447,587],[441,466],[431,404],[407,321],[367,232],[342,198]],[[459,731],[481,720],[741,768],[781,755],[803,729],[799,653],[807,264],[802,216],[785,179],[739,189],[682,215]],[[499,585],[545,582],[662,614],[700,615]],[[568,699],[589,685],[600,663],[597,536],[585,521]],[[502,494],[550,491],[672,517],[705,513]],[[499,409],[526,376],[553,254]],[[542,407],[553,400],[611,409],[637,419],[670,415],[686,395],[671,353],[648,332]],[[567,302],[576,296],[639,308],[692,302]],[[205,755],[277,705],[305,660]],[[77,462],[132,467],[212,502],[232,502],[257,482],[248,441],[221,395],[209,359],[210,345],[242,291],[258,248],[254,220],[239,195]],[[69,150],[118,140],[180,167],[263,172],[336,152],[435,111],[627,48],[757,19],[829,26],[970,56]]],"radStrokes":[8,9,10]},"淡":{"strokes":["M 249 688 Q 270 666 291 639 Q 304 623 322 623 Q 334 623 341 637 Q 347 653 340 686 Q 336 705 308 719 Q 238 749 224 743 Q 218 739 219 725 Q 222 712 249 688 Z","M 163 486 Q 206 432 237 419 Q 253 415 263 429 Q 270 442 267 460 Q 261 485 242 500 Q 203 527 173 528 Q 160 532 150 529 Q 143 528 145 514 Q 146 501 163 486 Z","M 142 158 Q 129 155 131 137 Q 143 61 180 39 Q 187 32 198 34 Q 205 35 207 62 Q 216 114 313 355 Q 320 371 319 378 Q 318 388 309 381 Q 294 372 182 198 Q 169 179 142 158 Z","M 408 627 Q 444 570 465 560 Q 478 556 488 565 Q 495 575 495 590 Q 491 624 424 658 Q 411 665 402 663 Q 396 662 397 652 Q 397 642 408 627 Z","M 730 705 Q 705 674 653 625 Q 646 618 651 611 Q 658 608 666 612 Q 756 658 799 675 Q 817 678 814 689 Q 810 705 794 726 Q 778 745 756 751 Q 741 752 740 733 Q 741 720 730 705 Z","M 545 792 Q 579 743 555 610 Q 533 507 418 404 Q 405 394 418 392 Q 473 398 535 465 Q 563 495 595 563 Q 595 566 597 567 Q 615 612 619 663 Q 622 733 635 766 Q 642 785 626 793 Q 572 821 550 812 Q 537 806 545 792 Z","M 640 537 Q 688 510 746 470 Q 764 457 777 456 Q 784 457 788 466 Q 795 479 777 513 Q 756 553 635 562 Q 626 565 627 554 Q 628 544 640 537 Z","M 377 316 Q 423 241 448 235 Q 461 232 471 250 Q 474 263 467 284 Q 460 303 436 315 Q 402 337 385 342 Q 376 345 373 334 Q 372 325 377 316 Z","M 725 386 Q 692 356 631 314 Q 624 308 626 299 Q 633 295 643 298 Q 746 332 795 343 Q 814 343 814 355 Q 813 374 798 398 Q 783 423 761 431 Q 745 435 741 415 Q 740 400 725 386 Z","M 583 258 Q 592 289 595 321 Q 599 367 609 383 Q 616 396 606 405 Q 593 418 564 421 Q 542 428 524 420 Q 512 414 521 400 Q 549 372 536 299 Q 524 155 352 61 Q 328 49 302 35 Q 286 22 307 24 Q 430 33 512 117 Q 545 151 575 231 L 583 258 Z","M 575 231 Q 657 125 747 27 Q 771 2 812 -1 Q 887 -8 965 5 Q 984 6 987 12 Q 990 19 974 25 Q 925 44 869 65 Q 805 89 758 120 Q 700 157 642 206 Q 602 243 583 258 C 560 277 557 255 575 231 Z"],"medians":[[[228,735],[298,685],[321,644]],[[157,518],[216,477],[244,441]],[[193,44],[181,78],[179,129],[312,374]],[[407,654],[463,598],[474,578]],[[755,736],[769,701],[658,617]],[[554,800],[586,778],[596,759],[589,645],[579,595],[555,536],[522,484],[456,418],[423,398]],[[637,552],[737,512],[775,469]],[[384,330],[436,281],[451,253]],[[757,416],[767,376],[632,305]],[[529,409],[544,405],[567,387],[571,375],[562,283],[549,231],[529,187],[488,130],[446,93],[359,46],[312,33]],[[590,241],[595,213],[617,213],[635,177],[650,177],[675,141],[685,140],[785,52],[825,45],[839,33],[937,17],[945,26],[975,13]]],"radStrokes":[0,1,2]},"戶":{"strokes":["M 496 784 Q 529 760 563 730 Q 579 717 599 718 Q 612 719 616 736 Q 620 755 607 789 Q 592 825 486 840 Q 467 844 460 840 Q 454 834 457 819 Q 463 806 496 784 Z","M 713 451 Q 752 542 789 562 Q 811 584 794 608 Q 773 627 708 660 Q 683 672 613 644 Q 505 608 374 589 C 344 585 361 550 391 555 Q 406 556 634 606 Q 661 613 671 602 Q 681 590 676 569 Q 660 505 639 453 C 628 425 701 424 713 451 Z","M 367 364 Q 368 364 371 363 Q 383 359 398 363 Q 501 388 726 413 Q 739 414 740 425 Q 740 432 713 451 C 693 466 668 460 639 453 Q 489 417 371 399 C 341 394 338 371 367 364 Z","M 374 589 Q 322 617 306 615 Q 284 612 301 587 Q 331 529 305 323 Q 295 238 248 140 Q 215 71 110 -26 Q 94 -39 89 -46 Q 88 -53 100 -54 Q 148 -54 229 27 Q 278 76 307 133 Q 335 193 352 277 Q 359 317 367 364 L 371 399 Q 378 454 383 519 Q 389 540 391 555 C 396 578 396 578 374 589 Z"],"medians":[[[467,832],[479,821],[563,781],[597,737]],[[383,586],[394,578],[413,577],[519,597],[648,633],[693,629],[732,586],[690,487],[647,458]],[[371,370],[394,383],[636,428],[705,432],[731,424]],[[307,600],[324,590],[346,564],[351,535],[332,316],[304,200],[267,116],[227,60],[152,-14],[97,-46]]]},"漫":{"strokes":["M 234 717 Q 256 692 281 663 Q 294 647 313 647 Q 326 646 332 661 Q 339 677 332 712 Q 328 731 297 749 Q 225 782 208 775 Q 202 771 203 756 Q 206 743 234 717 Z","M 125 556 Q 161 496 195 471 Q 211 465 223 477 Q 232 490 232 508 Q 228 551 168 583 Q 132 604 119 600 Q 112 600 112 587 Q 112 574 125 556 Z","M 143 152 Q 131 148 136 130 Q 163 55 198 40 Q 205 33 216 38 Q 223 39 222 66 Q 222 118 285 367 Q 289 385 288 390 Q 287 400 277 393 Q 264 381 177 196 Q 167 175 143 152 Z","M 465 785 Q 452 789 433 791 Q 421 794 419 789 Q 413 782 422 768 Q 450 716 471 629 Q 475 604 492 586 Q 510 567 514 581 Q 515 588 517 599 L 515 621 Q 511 649 503 676 L 498 701 Q 491 737 488 753 C 483 780 483 780 465 785 Z","M 671 618 Q 671 617 672 615 Q 676 600 687 601 Q 700 602 707 615 Q 717 625 738 681 Q 754 727 787 754 Q 805 769 790 783 Q 774 799 729 824 Q 714 833 658 819 Q 639 819 536 798 Q 496 791 465 785 C 436 779 459 744 488 753 Q 489 754 494 755 Q 548 771 670 786 Q 692 789 700 784 Q 707 780 703 755 Q 688 689 671 638 C 667 626 667 626 671 618 Z","M 503 676 Q 503 677 506 677 Q 585 693 644 702 Q 665 706 657 717 Q 647 730 625 733 Q 603 736 498 701 C 470 692 474 668 503 676 Z","M 517 599 Q 518 599 522 599 Q 606 611 671 618 C 695 621 695 621 671 638 Q 664 644 653 646 Q 626 650 515 621 C 486 613 487 599 517 599 Z","M 397 515 Q 385 521 352 523 Q 339 524 337 519 Q 331 512 341 497 Q 369 455 391 384 Q 395 363 411 350 Q 430 331 434 346 Q 435 355 436 366 L 432 392 Q 417 456 412 482 C 406 511 406 511 397 515 Z","M 740 408 Q 753 383 768 374 Q 778 365 794 384 Q 804 394 831 453 Q 841 483 866 506 Q 879 518 869 532 Q 854 550 814 578 Q 796 588 723 570 Q 690 569 515 536 Q 451 524 397 515 C 367 510 383 474 412 482 Q 448 492 494 502 L 517 506 Q 566 518 627 527 L 668 533 Q 761 551 778 533 Q 784 526 782 518 Q 764 442 750 435 C 736 415 736 415 740 408 Z","M 544 410 Q 544 465 518 505 L 517 506 C 499 530 489 532 494 502 Q 501 462 510 420 L 519 406 C 535 381 544 380 544 410 Z","M 636 426 Q 640 433 648 445 Q 658 460 669 478 Q 673 487 682 497 Q 694 507 686 516 Q 680 526 668 533 C 643 549 631 556 627 527 L 612 421 C 608 391 621 400 636 426 Z","M 436 366 Q 446 365 460 367 Q 620 392 740 408 C 770 412 777 423 750 435 Q 747 438 741 439 Q 725 442 636 426 L 612 421 Q 578 417 544 410 L 519 406 Q 473 402 432 392 C 403 385 406 367 436 366 Z","M 634 137 Q 671 182 698 247 Q 708 281 729 297 Q 747 310 730 326 Q 711 345 679 360 Q 658 369 636 360 Q 569 326 475 312 Q 447 309 436 302 Q 427 295 446 286 Q 473 273 513 286 Q 571 299 629 313 Q 642 320 645 303 Q 645 237 593 168 L 565 137 Q 495 77 323 38 Q 307 37 315 26 Q 322 19 352 19 Q 523 34 600 101 L 634 137 Z","M 600 101 Q 655 46 750 -22 Q 781 -41 824 -28 Q 879 -12 921 1 Q 934 5 946 12 Q 953 19 940 27 Q 924 34 798 61 Q 738 73 634 137 L 593 168 Q 556 196 517 232 Q 495 251 463 253 Q 451 254 444 246 Q 440 239 450 233 Q 457 229 465 225 Q 490 216 565 137 L 600 101 Z"],"medians":[[[213,767],[292,708],[314,665]],[[124,589],[188,526],[205,493]],[[209,48],[194,77],[185,128],[281,387]],[[427,782],[452,762],[463,743],[504,587]],[[472,782],[495,773],[551,787],[690,807],[725,797],[744,769],[687,616]],[[503,682],[515,694],[554,704],[628,717],[648,712]],[[520,605],[552,619],[633,630],[654,631],[664,623]],[[347,512],[380,487],[423,351]],[[405,512],[427,502],[553,531],[689,552],[759,560],[790,556],[804,549],[823,520],[775,411],[777,390]],[[501,496],[511,491],[527,424],[536,417]],[[677,508],[650,501],[628,436],[617,428]],[[440,387],[449,381],[535,392],[718,421],[742,430]],[[444,296],[488,297],[650,338],[664,333],[685,310],[667,249],[635,181],[571,109],[530,84],[462,58],[361,32],[322,30]],[[453,242],[493,228],[622,114],[711,52],[770,20],[788,14],[939,18]]],"radStrokes":[0,1,2]},"季":{"strokes":["M 507 772 Q 612 799 647 801 Q 662 800 666 806 Q 670 815 662 826 Q 616 872 586 873 Q 579 872 577 861 Q 571 825 347 761 Q 335 758 322 754 Q 316 747 321 744 Q 324 744 466 763 L 507 772 Z","M 546 645 Q 622 654 723 654 Q 784 654 791 663 Q 795 673 781 687 Q 727 727 670 708 Q 613 698 534 682 L 483 673 Q 477 674 472 672 Q 345 653 195 633 Q 176 630 190 615 Q 203 602 220 597 Q 239 593 255 597 Q 343 622 442 635 Q 443 636 448 635 L 546 645 Z","M 534 682 Q 534 685 535 687 Q 536 706 549 729 Q 553 738 544 749 Q 528 764 507 772 C 479 784 453 790 466 763 Q 481 736 483 673 L 483 606 Q 482 551 477 527 Q 476 515 490 481 Q 499 468 512 475 Q 522 484 523 555 Q 523 594 526 629 L 534 682 Z","M 448 635 Q 375 538 213 452 Q 200 445 208 441 Q 226 431 295 461 Q 356 485 445 567 Q 482 601 481 603 Q 482 604 483 606 C 510 643 478 674 448 635 Z","M 526 629 Q 614 551 710 481 Q 732 463 766 467 Q 827 471 890 493 Q 906 497 907 501 Q 908 507 894 511 Q 731 547 701 560 Q 694 564 688 566 Q 637 588 546 645 C 521 661 503 649 526 629 Z","M 522 320 Q 609 389 645 400 Q 664 404 658 421 Q 655 436 596 471 Q 580 481 559 473 Q 499 454 411 434 Q 387 427 332 432 Q 310 433 317 415 Q 324 403 341 392 Q 369 376 400 392 Q 541 440 557 429 Q 569 422 562 409 Q 537 373 506 329 C 489 304 498 301 522 320 Z","M 546 292 Q 537 308 522 320 L 506 329 Q 500 333 491 336 Q 470 343 460 336 Q 447 329 461 316 Q 479 303 491 285 L 506 248 Q 506 247 507 245 Q 523 188 520 131 Q 520 74 504 40 Q 491 15 457 21 Q 426 28 396 34 Q 384 37 389 26 Q 393 19 413 6 Q 453 -28 468 -54 Q 478 -72 495 -69 Q 508 -68 534 -41 Q 588 14 576 163 Q 572 215 561 252 L 546 292 Z","M 561 252 Q 574 253 886 253 Q 908 253 914 262 Q 921 275 902 292 Q 842 340 773 325 Q 682 310 546 292 L 491 285 Q 322 269 123 249 Q 99 248 116 227 Q 150 193 195 202 Q 355 241 506 248 L 561 252 Z"],"medians":[[[658,812],[601,830],[514,793],[460,781],[451,774],[438,776],[425,768],[414,772],[403,763],[389,767],[383,760],[361,763],[351,754],[322,749]],[[193,624],[246,617],[424,650],[695,684],[750,679],[784,668]],[[474,761],[512,731],[500,529],[504,483]],[[478,633],[439,589],[358,519],[278,470],[213,445]],[[533,635],[548,630],[672,543],[736,509],[800,501],[902,502]],[[327,421],[356,408],[385,408],[545,450],[580,447],[602,423],[597,413],[524,333],[514,333]],[[464,326],[479,323],[511,298],[534,249],[548,168],[545,64],[525,8],[496,-19],[397,26]],[[120,238],[174,227],[384,257],[798,291],[854,285],[902,269]]],"radStrokes":[5,6,7]},"迎":{"strokes":["M 457 618 Q 503 643 533 663 Q 603 711 631 720 Q 653 729 644 747 Q 631 766 606 782 Q 584 798 570 796 Q 557 795 560 781 Q 561 747 499 689 Q 472 664 443 634 C 422 612 431 604 457 618 Z","M 443 634 Q 421 653 405 656 Q 392 657 386 654 Q 376 647 388 633 Q 421 573 408 423 Q 401 375 389 357 Q 376 336 385 314 Q 397 283 414 270 Q 424 263 437 282 Q 467 322 568 423 Q 586 439 587 446 Q 588 459 567 447 Q 530 425 487 401 Q 468 388 459 392 Q 452 396 451 416 Q 452 561 459 598 Q 460 610 457 618 L 443 634 Z","M 680 581 Q 750 605 802 614 Q 815 615 817 613 Q 827 600 823 562 Q 817 460 795 414 Q 782 384 755 387 Q 731 391 710 398 Q 688 404 704 383 Q 747 347 767 319 Q 786 300 802 317 Q 851 359 868 458 Q 883 602 894 618 Q 904 630 899 638 Q 890 647 845 664 Q 827 671 811 658 Q 787 640 670 613 C 641 606 652 571 680 581 Z","M 627 126 Q 633 104 639 94 Q 643 88 651 90 Q 663 99 670 153 Q 676 213 674 273 Q 671 324 674 522 Q 674 538 680 581 C 683 605 683 605 670 613 Q 642 632 628 634 Q 616 638 602 630 Q 595 623 601 613 Q 620 580 621 539 Q 625 128 627 126 Z","M 238 718 Q 262 696 287 671 Q 302 656 319 657 Q 331 658 337 673 Q 341 689 332 721 Q 320 749 232 770 Q 216 774 208 771 Q 202 767 204 753 Q 208 740 238 718 Z","M 296 187 Q 309 191 314 212 Q 320 245 284 309 Q 254 370 335 452 Q 335 453 337 454 Q 359 470 340 487 Q 321 503 287 520 Q 265 533 247 517 Q 213 495 169 482 Q 111 461 93 466 Q 86 467 83 462 Q 82 456 89 452 Q 126 431 235 464 Q 245 467 253 454 Q 272 432 251 406 Q 203 360 253 278 Q 280 214 278 194 Q 277 193 276 189 C 274 169 274 169 296 187 Z","M 276 189 Q 236 192 192 179 Q 149 164 85 162 Q 79 162 75 154 Q 71 147 79 137 Q 95 118 119 104 Q 129 97 149 111 Q 233 162 308 144 Q 374 128 505 66 Q 734 -48 816 -21 Q 879 -2 933 35 Q 957 50 932 51 Q 697 51 529 107 Q 462 129 381 163 Q 339 182 296 187 L 276 189 Z"],"medians":[[[569,786],[592,745],[530,686],[461,634],[453,636]],[[392,645],[413,631],[431,599],[428,392],[437,352],[477,366],[578,445]],[[687,589],[690,602],[706,608],[821,636],[833,637],[855,620],[843,473],[835,436],[812,381],[787,355],[704,392]],[[611,621],[643,594],[649,575],[647,98]],[[214,763],[296,710],[316,679]],[[90,459],[150,459],[256,490],[269,489],[293,469],[284,424],[254,369],[252,351],[258,313],[289,247],[295,219],[292,201],[281,190]],[[88,148],[131,136],[231,167],[300,167],[353,153],[589,58],[693,28],[756,17],[812,17],[936,43]]],"radStrokes":[4,5,6]},"穫":{"strokes":["M 296 678 Q 356 708 403 718 Q 419 719 422 726 Q 425 736 414 746 Q 359 785 326 780 Q 320 776 319 766 Q 322 730 137 639 Q 133 630 137 628 Q 140 628 261 664 L 296 678 Z","M 316 483 Q 350 493 391 502 Q 407 506 407 513 Q 407 526 389 533 Q 356 545 317 529 L 273 516 Q 150 483 86 471 Q 73 468 71 461 Q 70 451 85 440 Q 130 416 171 435 Q 214 453 250 464 L 316 483 Z","M 313 374 Q 313 453 316 483 L 317 529 Q 321 602 328 637 Q 331 650 323 656 Q 308 669 296 678 C 273 697 254 693 261 664 Q 271 643 273 516 L 269 405 Q 268 392 268 377 Q 256 169 240 114 Q 231 71 264 18 Q 276 -1 284 -7 Q 296 -8 302 6 Q 315 40 312 72 Q 311 220 312 349 L 313 374 Z","M 250 464 Q 193 341 51 168 Q 45 159 56 158 Q 62 157 71 165 Q 194 264 269 405 C 312 485 263 492 250 464 Z","M 312 349 Q 388 273 397 272 Q 404 271 410 281 Q 414 291 409 313 Q 406 332 380 348 Q 323 378 313 374 C 289 372 291 370 312 349 Z","M 585 729 Q 584 757 583 780 Q 584 796 569 801 Q 538 819 519 811 Q 504 804 516 789 Q 540 759 547 723 L 553 695 Q 562 649 573 638 Q 583 629 587 638 Q 591 651 587 707 L 585 729 Z","M 587 707 Q 599 710 613 717 Q 617 721 616 727 Q 615 731 604 733 Q 595 732 585 729 L 547 723 Q 417 708 416 705 Q 415 698 420 692 Q 430 680 453 672 Q 468 665 480 670 Q 514 683 553 695 L 587 707 Z","M 741 763 Q 745 778 756 795 Q 768 808 759 816 Q 749 829 719 842 Q 704 849 691 841 Q 682 837 689 827 Q 699 809 693 754 L 688 724 Q 678 670 678 660 Q 679 650 691 656 Q 698 663 728 727 L 741 763 Z","M 728 727 Q 773 740 857 733 Q 867 732 871 739 Q 875 746 865 757 Q 832 787 757 766 Q 748 766 741 763 L 693 754 Q 677 753 661 750 Q 640 749 655 737 Q 670 728 683 725 Q 684 725 688 724 L 728 727 Z","M 500 521 Q 558 600 559 605 Q 558 606 558 607 Q 557 616 537 632 Q 519 645 507 645 Q 494 645 499 630 Q 511 603 455 518 Q 430 479 393 437 Q 386 430 384 426 Q 383 419 391 420 Q 406 423 479 496 L 500 521 Z","M 521 325 Q 522 332 522 340 Q 521 446 524 470 Q 528 491 502 519 L 500 521 C 480 543 469 524 479 496 Q 497 454 474 341 Q 462 304 491 273 L 492 272 Q 505 262 512 280 Q 516 293 519 308 L 521 325 Z","M 622 649 Q 656 607 675 606 Q 684 605 688 618 Q 689 627 682 640 Q 667 661 624 667 Q 618 668 618 660 Q 617 654 622 649 Z","M 670 556 Q 778 583 784 588 Q 790 594 786 600 Q 782 607 761 612 Q 739 616 719 607 Q 689 595 656 586 Q 619 576 576 570 Q 551 566 570 554 Q 591 542 632 547 L 670 556 Z","M 685 480 Q 730 490 769 496 Q 788 499 781 510 Q 772 522 751 525 Q 717 528 687 513 L 640 499 Q 606 492 578 482 Q 563 479 581 467 Q 591 460 610 464 Q 623 468 640 470 L 685 480 Z","M 681 404 Q 729 414 773 420 Q 792 423 785 434 Q 776 446 755 450 Q 710 453 683 437 L 640 426 Q 604 419 574 410 Q 561 407 577 395 Q 587 388 607 391 Q 623 395 641 397 L 681 404 Z","M 679 353 Q 680 380 681 404 L 683 437 Q 683 459 685 480 L 687 513 Q 688 517 688 519 Q 694 534 686 542 Q 679 549 670 556 C 647 575 624 576 632 547 Q 635 541 640 499 L 640 470 Q 640 452 640 426 L 641 397 Q 641 375 642 346 C 643 316 678 323 679 353 Z","M 642 346 Q 584 337 521 325 C 498 321 498 321 519 308 Q 546 290 569 298 Q 683 331 845 331 Q 860 332 863 338 Q 867 348 854 357 Q 806 387 762 371 Q 726 364 679 353 L 642 346 Z","M 677 97 Q 714 140 747 204 Q 760 229 779 245 Q 797 258 786 271 Q 776 283 747 295 Q 725 304 654 274 Q 524 243 514 240 Q 501 239 497 232 Q 493 225 511 219 Q 545 207 591 223 Q 670 253 685 252 Q 701 251 696 234 Q 672 156 639 122 L 614 97 Q 544 40 417 11 Q 404 8 414 -1 Q 420 -5 462 -3 Q 561 6 645 67 L 677 97 Z","M 645 67 Q 754 -35 793 -32 Q 866 -25 923 -10 Q 953 -3 950 5 Q 949 9 918 16 Q 749 52 683 93 Q 679 96 677 97 L 639 122 Q 549 195 521 191 Q 505 190 503 186 Q 502 180 517 172 Q 545 160 614 97 L 645 67 Z"],"medians":[[[421.5,736],[146,639]],[[81,458],[135,453],[356,517],[396,515]],[[268,664],[292,648],[297,637],[287,268],[275,103],[287,2]],[[267,464],[258,455],[247,408],[189,317],[124,233],[58,165]],[[316,368],[331,350],[360,335],[382,315],[399,282]],[[523,799],[556,777],[580,643]],[[420,699],[479,692],[607,724]],[[701,832],[718,817],[724,801],[708,724],[686,662]],[[666,740],[694,738],[806,756],[861,744]],[[506,636],[526,608],[516,580],[462,496],[391,427]],[[497,516],[503,508],[505,469],[495,320],[500,280]],[[628,657],[675,619]],[[571,563],[621,560],[732,592],[778,595]],[[586,476],[630,481],[710,504],[754,510],[773,505]],[[582,404],[746,434],[777,429]],[[639,546],[663,527],[661,374],[647,353]],[[530,320],[534,314],[560,314],[787,353],[854,343]],[[504,230],[578,237],[692,271],[735,257],[718,209],[681,139],[627,79],[538,30],[452,6],[419,4]],[[508,184],[558,163],[668,74],[781,10],[872,2],[924,4],[932,-1],[945,3]]],"radStrokes":[0,1,2,3,4]},"幅":{"strokes":["M 171 553 Q 153 571 124 568 Q 112 564 118 554 Q 151 482 123 374 Q 101 329 132 293 L 134 291 Q 140 279 148 285 Q 175 304 175 380 Q 176 486 179 518 C 181 545 181 545 171 553 Z","M 302 547 Q 357 562 370 553 Q 382 549 384 532 Q 388 490 384 413 Q 384 391 363 391 Q 338 391 317 392 Q 304 393 307 386 Q 310 377 335 363 Q 366 341 385 315 Q 394 308 403 312 Q 431 334 436 405 Q 436 540 444 553 Q 453 563 446 573 Q 436 583 400 599 Q 391 603 331 588 Q 324 588 302 581 L 260 572 Q 244 571 229 565 Q 195 558 171 553 C 142 547 150 510 179 518 Q 186 518 195 522 Q 217 531 260 539 L 302 547 Z","M 230 112 Q 220 76 244 14 Q 251 -4 259 -7 Q 265 -14 272 -5 Q 279 -1 289 19 Q 299 44 298 74 Q 297 122 302 547 L 302 581 Q 302 584 303 586 Q 304 682 322 746 Q 331 761 327 774 Q 320 784 267 817 Q 243 833 224 818 Q 218 814 225 798 Q 256 752 258 703 Q 258 642 260 572 L 260 539 Q 256 406 254 259 Q 250 183 230 112 Z","M 549 726 Q 512 719 539 703 Q 584 679 639 694 Q 703 707 772 723 Q 803 730 807 735 Q 817 744 811 752 Q 804 764 774 771 Q 750 774 665 748 Q 593 730 549 726 Z","M 548 585 Q 535 589 513 592 Q 501 595 499 590 Q 493 583 501 569 Q 526 523 543 448 Q 547 426 560 411 Q 578 390 582 405 Q 585 414 585 427 L 582 459 Q 569 532 566 556 C 563 581 563 581 548 585 Z","M 779 479 Q 806 540 835 561 Q 851 577 838 595 Q 823 608 775 633 Q 757 642 688 615 Q 612 596 548 585 C 518 580 536 551 566 556 Q 569 556 725 588 Q 741 591 749 584 Q 756 577 753 562 Q 743 522 732 489 C 723 460 767 452 779 479 Z","M 585 427 Q 592 427 604 428 Q 661 441 785 452 Q 795 453 796 461 Q 796 468 779 479 L 732 489 Q 728 490 724 488 Q 645 469 582 459 C 552 454 555 426 585 427 Z","M 488 331 Q 476 337 453 342 Q 440 346 437 341 Q 430 335 438 318 Q 469 236 480 107 Q 481 68 501 40 Q 517 18 523 33 Q 527 43 529 58 L 529 90 Q 529 103 527 118 Q 509 251 505 293 C 502 323 502 325 488 331 Z","M 782 86 Q 792 61 816 13 Q 825 -5 835 -4 Q 851 -1 860 25 Q 887 80 903 239 Q 907 288 931 318 Q 949 337 936 352 Q 914 374 867 394 Q 848 404 815 393 Q 742 368 659 350 Q 589 340 488 331 C 458 328 475 289 505 293 Q 512 293 519 294 Q 567 304 630 315 L 671 323 Q 726 333 793 344 Q 823 350 835 335 Q 856 301 826 126 Q 825 110 818 108 Q 815 107 807 109 C 780 95 778 94 782 86 Z","M 682 200 Q 716 209 754 215 Q 782 222 787 225 Q 794 232 790 239 Q 784 248 761 254 Q 740 258 685 240 L 637 228 Q 603 222 563 218 Q 533 214 554 199 Q 590 180 633 191 Q 634 192 637 191 L 682 200 Z","M 677 113 Q 678 159 682 200 L 685 240 Q 691 303 680 315 Q 674 319 671 323 C 650 344 620 343 630 315 Q 636 309 637 228 L 637 191 Q 637 157 637 106 C 637 76 676 83 677 113 Z","M 529 58 Q 572 73 782 86 C 812 88 829 89 807 109 Q 800 116 788 124 Q 770 136 677 113 L 637 106 Q 579 99 529 90 C 499 85 500 49 529 58 Z"],"medians":[[[131,557],[149,539],[156,506],[144,296]],[[182,525],[194,540],[208,545],[346,575],[392,572],[410,557],[411,418],[398,369],[392,362],[367,367],[314,386]],[[237,809],[263,789],[286,759],[287,735],[281,640],[277,241],[262,84],[264,6]],[[541,716],[601,710],[753,745],[801,745]],[[507,583],[532,563],[540,548],[572,410]],[[556,583],[581,574],[725,609],[771,604],[794,577],[764,508],[739,494]],[[589,433],[600,445],[721,467],[787,461]],[[444,333],[466,314],[478,286],[513,39]],[[497,328],[521,314],[662,335],[830,370],[851,365],[871,349],[885,333],[856,120],[834,70],[835,10]],[[556,210],[565,205],[604,205],[735,233],[780,234]],[[637,316],[660,295],[663,253],[658,136],[642,114]],[[531,63],[553,80],[800,109]]],"radStrokes":[0,1,2]},"伴":{"strokes":["M 262 537 Q 293 580 330 634 Q 358 680 382 703 Q 392 713 387 729 Q 383 742 353 768 Q 325 787 305 788 Q 284 787 293 763 Q 306 732 294 705 Q 255 617 198 534 Q 143 455 68 369 Q 58 359 54 352 Q 50 339 66 342 Q 102 346 206 469 Q 218 484 232 499 L 262 537 Z","M 232 499 Q 268 463 245 248 Q 238 194 225 139 Q 210 90 247 42 Q 248 39 252 36 Q 271 20 283 48 Q 298 90 298 138 Q 298 394 306 453 Q 313 483 287 511 Q 281 517 262 537 C 241 559 215 524 232 499 Z","M 461 574 Q 477 556 493 534 Q 506 521 523 519 Q 535 519 541 533 Q 547 548 540 580 Q 534 604 459 625 Q 443 629 436 627 Q 430 623 431 610 Q 434 598 461 574 Z","M 774 654 Q 770 645 715 567 Q 705 549 722 553 Q 767 575 818 607 Q 837 623 863 635 Q 885 645 874 664 Q 861 682 833 697 Q 808 712 794 708 Q 781 707 785 692 Q 789 673 774 654 Z","M 651 434 Q 705 444 797 454 Q 807 453 817 466 Q 818 478 795 488 Q 761 512 657 479 Q 654 479 652 478 L 596 466 Q 539 460 456 449 Q 428 445 450 428 Q 481 401 511 409 Q 548 416 596 425 L 651 434 Z","M 650 286 Q 741 296 879 296 Q 939 293 947 304 Q 953 316 936 330 Q 884 369 846 360 Q 773 344 650 324 L 595 316 Q 487 303 364 286 Q 343 285 359 267 Q 372 254 391 248 Q 413 242 428 247 Q 506 269 594 278 L 650 286 Z","M 594 278 Q 588 -14 608 -48 Q 623 -64 632 -42 Q 650 -3 650 286 L 650 324 Q 650 405 651 434 L 652 478 Q 653 721 675 754 Q 684 781 665 795 Q 640 814 595 827 Q 574 831 561 817 Q 551 810 564 796 Q 594 771 596 736 Q 596 642 596 466 L 596 425 Q 596 371 595 316 L 594 278 Z"],"medians":[[[304,773],[322,757],[341,722],[325,688],[253,569],[182,472],[114,394],[63,351]],[[264,528],[263,498],[278,463],[278,368],[273,243],[258,98],[264,45]],[[441,619],[505,573],[522,538]],[[794,698],[821,658],[783,616],[729,573],[725,563]],[[451,439],[492,430],[730,472],[775,474],[806,468]],[[361,277],[412,268],[662,308],[857,329],[938,310]],[[569,807],[596,801],[633,762],[624,571],[619,-42]]],"radStrokes":[0,1]}};</script>
+<script>
+/* =====================================================================
+   窗口邊的臺灣欒樹　互動闖關　資料與邏輯
+   設計理念：TEACCH 結構化教學　＋　自閉症 / ADHD 特質支持
+   ===================================================================== */
+
+/* ---------- 生詞詞義（點課文橘字可查、可聽） ---------- */
+const GLOSS = {
+  "臺灣欒樹":"臺灣常見的行道樹。一年四季顏色會變化，又叫「四色樹」。",
+  "窗戶":"窗子。",
+  "浪漫":"充滿詩意、美好想像的感覺。",
+  "四季":"春、夏、秋、冬四個季節。",
+  "素淨":"樸素又乾淨，沒有多餘的裝飾。",
+  "嫩葉":"剛長出來、又小又軟的新葉子。",
+  "繁華墨綠":"葉子茂密、又是很深的綠色。墨綠就是像墨一樣深的綠。",
+  "多采多姿":"種類多、變化豐富，非常精采。",
+  "一簇":"花或葉子聚在一起的一小叢。",
+  "幾週":"幾個星期。",
+  "淡紅色":"淺淺的紅色。",
+  "收穫":"農作物成熟後採收，也指得到成果。",
+  "迎接":"歡迎、準備接受即將到來的事物。",
+  "一幅":"計算圖畫的單位詞。",
+  "相伴":"互相陪伴。"
+};
+
+/* ---------- 課文段落（關卡一：朗讀 ＋ 逐段理解） ---------- */
+const PASSAGES = [
+  {ic:"🏫",label:"開頭",season:null,
+   text:"我家在一所學校的圍牆邊。沿著圍牆，學校種了一排臺灣欒樹，已經十五年了。我們天天看著臺灣欒樹，現在它們長到我家三樓的窗口邊。",
+   terms:["臺灣欒樹"]},
+  {ic:"🪟",label:"每天的問候",season:null,
+   text:"每天一早打開窗戶，風一吹，臺灣欒樹就像在和我們揮手，然後靜靜的守在窗口旁，等待我們放學回家。",
+   terms:["窗戶"]},
+  {ic:"🎨",label:"像一位藝術家",season:null,
+   text:"多年來，窗口邊的臺灣欒樹一直是個浪漫的藝術家，展現四季不同的風采。",
+   terms:["浪漫","四季"]},
+  {ic:"🌱",label:"春天",season:"春",
+   text:"春天時，素淨的枝條，悄悄掛上一串串嫩葉，好像要我們張大雙眼，仔細觀察它們的成長。",
+   terms:["素淨","嫩葉"],
+   check:{q:"春天的時候，臺灣欒樹長出了什麼？",options:["一串串的嫩葉","一簇簇的黃花","淡紅色的果實"],answer:0}},
+  {ic:"🌳",label:"夏天",season:"夏",
+   text:"不知不覺來到了夏天，我們才發現那一樹的繁華墨綠，早已吸引三五成群的麻雀前來，在綠葉間開心的玩起捉迷藏。",
+   terms:["繁華墨綠"],
+   check:{q:"夏天，臺灣欒樹的葉子是什麼樣子？",options:["茂密的深綠色","掉光了","開滿黃花"],answer:0}},
+  {ic:"🌼",label:"秋天",season:"秋",
+   text:"秋天是臺灣欒樹最多采多姿的時節。先是樹上開滿一簇一簇的黃花，幾週後，結出淡紅色的果實，一看就知道收穫的季節到了！",
+   terms:["多采多姿","一簇","幾週","淡紅色","收穫"],
+   check:{q:"秋天，臺灣欒樹先開黃花，接著結出什麼？",options:["淡紅色的果實","綠色的嫩葉","白色的雪花"],answer:0}},
+  {ic:"❄️",label:"冬天",season:"冬",
+   text:"到了冬天，它們更是體貼入微，連忙脫去身上的黃葉，好讓我們能享受陽光的溫暖。脫去了黃葉的臺灣欒樹，在風裡早早休息，等待明年春天到來，迎接又一個新的開始。",
+   terms:["迎接"],
+   check:{q:"冬天，臺灣欒樹為什麼要脫去黃葉？",options:["讓我們能曬到溫暖的陽光","因為葉子太重了","因為要送給小鳥"],answer:0}},
+  {ic:"🖼️",label:"結尾",season:null,
+   text:"窗口邊的臺灣欒樹像一幅風景畫。我們在窗邊擺了一張特別長的書桌，每天晚上全家人坐在窗前話家常，或做著自己喜歡的事，它們只是靜靜相伴。有了它們，我家因而充滿藝術氣息。",
+   terms:["一幅","相伴"]}
+];
+
+/* ---------- 生字（關卡二） ---------- */
+const ZI = [
+  {z:"素",zhuyin:"ㄙㄨˋ",bushou:"糸",out:4,total:10,word:"素淨"},
+  {z:"嫩",zhuyin:"ㄋㄣˋ",bushou:"女",out:11,total:14,word:"嫩葉"},
+  {z:"繁",zhuyin:"ㄈㄢˊ",bushou:"糸",out:11,total:17,word:"繁華"},
+  {z:"墨",zhuyin:"ㄇㄛˋ",bushou:"黑",out:3,total:15,word:"墨綠"},
+  {z:"姿",zhuyin:"ㄗ",bushou:"女",out:6,total:9,word:"多采多姿"},
+  {z:"簇",zhuyin:"ㄘㄨˋ",bushou:"竹",out:11,total:17,word:"一簇"},
+  {z:"週",zhuyin:"ㄓㄡ",bushou:"辵",out:8,total:12,word:"幾週"},
+  {z:"淡",zhuyin:"ㄉㄢˋ",bushou:"水",out:8,total:11,word:"淡紅色"},
+  {z:"戶",zhuyin:"ㄏㄨˋ",bushou:"戶",out:0,total:4,word:"窗戶"},
+  {z:"漫",zhuyin:"ㄇㄢˋ",bushou:"水",out:11,total:14,word:"浪漫"},
+  {z:"季",zhuyin:"ㄐㄧˋ",bushou:"子",out:5,total:8,word:"四季"},
+  {z:"迎",zhuyin:"ㄧㄥˊ",bushou:"辵",out:4,total:8,word:"迎接"},
+  {z:"穫",zhuyin:"ㄏㄨㄛˋ",bushou:"禾",out:14,total:19,word:"收穫"},
+  {z:"幅",zhuyin:"ㄈㄨˊ",bushou:"巾",out:9,total:12,word:"一幅"},
+  {z:"伴",zhuyin:"ㄅㄢˋ",bushou:"人",out:5,total:7,word:"相伴"}
+];
+
+/* ---------- 語詞理解題（關卡二後段） ---------- */
+const WORDQ = [
+  {q:"「墨綠」的「墨」，是形容顏色怎麼樣？",options:["像墨一樣很深","一種文具的名字","天空的顏色"],answer:0,
+   explain:"墨綠就是「像墨一樣深的綠色」。"},
+  {q:"一（　）一（　）的黃花，中間要填哪個量詞？",options:["簇","幅","串"],answer:0,
+   explain:"花聚成一小叢，量詞用「簇」，所以是「一簇一簇的黃花」。"},
+  {q:"「收穫」是什麼意思？",options:["農作物成熟採收、得到成果","把東西收進抽屜","走路走得很慢"],answer:0,
+   explain:"秋天果實成熟，就是「收穫」的季節。"},
+  {q:"「相伴」的意思是？",options:["互相陪伴","一個人孤單","吵架"],answer:0,
+   explain:"臺灣欒樹靜靜的和全家人「相伴」，就是互相陪伴。"},
+  {q:"一（　）風景畫，量詞要用哪一個？",options:["幅","簇","串"],answer:0,
+   explain:"圖畫的量詞是「幅」，所以是「一幅風景畫」。"},
+  {q:"「素淨」是形容枝條怎麼樣？",options:["樸素又乾淨","很髒很亂","很吵鬧"],answer:0,
+   explain:"春天的枝條「素淨」，就是樸素、乾淨的樣子。"}
+];
+
+/* ---------- 四季配對（關卡三） ---------- */
+const SEASONS = [
+  {s:"春",ic:"🌱",q:"春天，臺灣欒樹在做什麼？",
+   options:["長出一串串嫩葉","脫去身上的黃葉","結出淡紅色果實"],answer:0,ans:"長出嫩葉"},
+  {s:"夏",ic:"🌳",q:"夏天，臺灣欒樹是什麼樣子？",
+   options:["長滿茂密的墨綠色葉子","開滿黃花","樹枝光禿禿的"],answer:0,ans:"長滿綠葉"},
+  {s:"秋",ic:"🌼",q:"秋天，臺灣欒樹的變化順序是？",
+   options:["先開黃花，再結出淡紅色果實","先結果實，再長嫩葉","先脫葉，再開花"],answer:0,ans:"先開黃花，再結淡紅色果實"},
+  {s:"冬",ic:"❄️",q:"冬天，臺灣欒樹在做什麼？",
+   options:["脫去黃葉，早早休息","長出許多新葉","開滿一樹的花"],answer:0,ans:"脫去黃葉"}
+];
+
+/* ---------- PIRLS 四層次提問（關卡四） ---------- */
+const PIRLS = [
+  {tag:"找一找",sub:"在課文裡直接找到答案",q:"臺灣欒樹種在什麼地方？",
+   options:["學校的圍牆邊","公園的池塘旁","高高的山頂上"],answer:0,
+   explain:"課文說：學校沿著圍牆種了一排臺灣欒樹。"},
+  {tag:"想一想",sub:"從課文推理出來",q:"作者為什麼覺得臺灣欒樹好像在和大家「揮手」？",
+   options:["因為風一吹，樹葉和枝條會搖動","因為樹真的長出了手","因為有人在搖樹"],answer:0,
+   explain:"風吹過時枝葉搖動，看起來就像在揮手打招呼。"},
+  {tag:"連起來",sub:"把課文的意思連在一起",q:"為什麼作者說臺灣欒樹是「浪漫的藝術家」？",
+   options:["因為它四季展現不同的美麗景色","因為它會拿筆畫圖","因為它長得特別高"],answer:0,
+   explain:"春嫩葉、夏墨綠、秋黃花紅果、冬落葉，四季都有不同的美，像藝術家的作品。"},
+  {tag:"說說看",sub:"表達你自己的想法",q:"你覺得作者為什麼喜歡窗口邊的臺灣欒樹？",
+   options:["因為它讓家裡充滿美麗和藝術氣息","因為它的果實很好吃","因為它可以擋住太陽很涼快"],answer:0,
+   explain:"有了臺灣欒樹的陪伴，家裡因而充滿藝術氣息。",
+   reflect:"我最喜歡臺灣欒樹的（春／夏／秋／冬）天，因為＿＿＿＿。"}
+];
+
+/* ---------- 關卡定義 ---------- */
+const LEVELS = [
+  {ic:"📖",name:"讀課文",sub:"一段一段讀，還可以聽",intro:"我們要一段一段讀完課文。點【🔊 聽這一段】的按鈕可以聽老師唸，點【綠色】的語詞可以查意思。讀完一段就按「下一段」。"},
+  {ic:"✏️",name:"學生字語詞",sub:"認識 15 個生字和語詞",intro:"先一張一張認識生字。可以看筆順動畫、聽發音，還可以自己動手描一次，再玩語詞小挑戰。不用背，慢慢來就好。"},
+  {ic:"🌳",name:"四季變變變",sub:"整理臺灣欒樹的四季",intro:"臺灣欒樹一年會變四次。我們一個季節一個季節，把它做了什麼配對起來，最後拼成一張完整的圖。"},
+  {ic:"🧠",name:"閱讀高手",sub:"四種提問，一次一題",intro:"最後四題，一次只出現一題。有的在課文裡找得到，有的要動動腦想一想，最後一題說說你自己的想法。"}
+];
+
+/* =====================================================================
+   狀態
+   ===================================================================== */
+const state = {
+  view:"home",          // home / level / break / done
+  li:0,                 // 目前關卡索引
+  steps:[],             // 目前關卡展開的步驟
+  si:0,                 // 目前步驟索引
+  stars:[false,false,false,false],
+  audio:true,
+  fontLevel:0,
+  prevView:null,        // 休息回來用
+};
+
+const app = document.getElementById("app");
+const progEl = document.getElementById("prog");
+
+/* ---------- 語音朗讀（離線 Web Speech，不支援時靜默） ---------- */
+let voiceTW = null;
+function pickVoice(){
+  const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  voiceTW = vs.find(v=>/zh[-_]TW/i.test(v.lang)) || vs.find(v=>/zh[-_]HK/i.test(v.lang))
+         || vs.find(v=>/^zh/i.test(v.lang)) || null;
+}
+if(window.speechSynthesis){
+  pickVoice();
+  speechSynthesis.onvoiceschanged = pickVoice;
+}
+function speak(text,btn){
+  if(!state.audio || !window.speechSynthesis){return;}
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang="zh-TW"; u.rate=0.86; u.pitch=1.02;
+  if(voiceTW) u.voice=voiceTW;
+  if(btn){
+    btn.classList.add("speaking");
+    u.onend=u.onerror=()=>btn.classList.remove("speaking");
+  }
+  speechSynthesis.speak(u);
+}
+function stopSpeak(){ if(window.speechSynthesis) speechSynthesis.cancel(); }
+/* 產生可安全放進「雙引號 onclick 屬性」的朗讀呼叫字串
+   （用 &quot; 當字串界定符，避免雙引號截斷屬性） */
+function ttsCall(s){
+  var js=JSON.stringify(String(s));
+  return "speak("+js.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;")+",this)";
+}
+
+/* ---------- 頂部進度星 ---------- */
+function renderProg(){
+  progEl.innerHTML="";
+  for(let i=0;i<4;i++){
+    const d=document.createElement("div");
+    d.className="dot"+(state.stars[i]?" done":"")+(state.view==="level"&&state.li===i?" current":"");
+    d.textContent=state.stars[i]?"★":(i+1);
+    progEl.appendChild(d);
+  }
+}
+
+/* =====================================================================
+   首頁：關卡地圖
+   ===================================================================== */
+function firstUnfinished(){
+  for(let i=0;i<4;i++) if(!state.stars[i]) return i;
+  return 4;
+}
+function renderHome(){
+  stopSpeak();
+  state.view="home"; renderProg();
+  const done = state.stars.filter(Boolean).length;
+  const cur = firstUnfinished();
+  let rows="";
+  LEVELS.forEach((lv,i)=>{
+    const isDone=state.stars[i];
+    const isCur=(i===cur);
+    const locked=(i>cur);
+    const rowCls=isDone?"done":(isCur?"current":(locked?"locked":""));
+    let status = isDone? '<span class="status ok">★ 完成</span>'
+               : isCur? '<span class="status" style="color:var(--accent-dark)">這一關 ▶</span>'
+               : locked? '<span class="status lock">🔒 待解鎖</span>' : '';
+    rows+=`<div class="level-row ${rowCls}">
+      <div class="level-rail">
+        <div class="num">${isDone?"★":(i+1)}</div>
+        ${i<3?'<div class="line-v"></div>':''}
+      </div>
+      <div class="level-card" ${(!locked)?`onclick="startLevel(${i})" style="cursor:pointer"`:''}>
+        <div class="ic">${lv.ic}</div>
+        <div class="body"><b>關卡 ${i+1}　${lv.name}</b><div class="sub">${lv.sub}</div></div>
+        ${status}
+      </div>
+    </div>`;
+  });
+  const allDone = done===4;
+  app.innerHTML=`
+    <div class="home-hero">
+      <div class="tree-emoji">🌳</div>
+      <h1>窗口邊的臺灣欒樹</h1>
+      <div class="author">文　王素涼</div>
+      <div class="intro">
+        <b>🦉 這篇課文在說什麼？</b><br>
+        臺灣欒樹是臺灣常見的行道樹，一年四季會呈現豐富的色彩變化，又叫「四色樹」。
+        我們要透過學習地圖四個步驟，一步一步讀懂它。
+        <div style="margin-top:8px"><button class="tts" onclick="speak('臺灣欒樹是臺灣常見的行道樹，一年四季會呈現豐富的色彩變化，又叫四色樹。我們要透過學習地圖四個步驟，一步一步讀懂它。',this)">🔊 聽老師介紹</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:4px">📍 學習地圖　<span style="color:var(--muted);font-size:.7em;font-weight:400">（完成 ${done} ／ 4 關）</span></h3>
+      <p style="color:var(--muted);font-size:.86em;margin:0 0 16px">先做第一關，做完會亮一顆星星 ★，下一關就會打開。</p>
+      <div class="roadmap">${rows}</div>
+      <button class="btn big" onclick="startLevel(${allDone?0:cur})">${allDone?"🎉 全部完成！再玩一次":"開始關卡 "+(cur+1)+"　"+LEVELS[cur].name+"　▶"}</button>
+    </div>`;
+}
+
+/* =====================================================================
+   啟動一個關卡：展開步驟
+   ===================================================================== */
+function buildSteps(li){
+  const steps=[{type:"intro"}];
+  if(li===0){
+    PASSAGES.forEach((p,idx)=>{
+      steps.push({type:"read",data:p});
+      if(p.check) steps.push({type:"check",data:p.check,tag:"想一想"});
+    });
+  }else if(li===1){
+    ZI.forEach((z,idx)=>steps.push({type:"zi",data:z,idx}));
+    steps.push({type:"wordintro"});
+    WORDQ.forEach(q=>steps.push({type:"wordq",data:q}));
+  }else if(li===2){
+    SEASONS.forEach(s=>steps.push({type:"season",data:s}));
+    steps.push({type:"mindmap"});
+  }else if(li===3){
+    PIRLS.forEach(p=>steps.push({type:"pirls",data:p}));
+  }
+  steps.push({type:"complete"});
+  return steps;
+}
+function startLevel(li){
+  state.li=li; state.steps=buildSteps(li); state.si=0; state.view="level";
+  renderStep();
+}
+
+/* =====================================================================
+   關卡步驟渲染
+   ===================================================================== */
+function stepShell(inner,opts={}){
+  // opts: showBar(bool), next(fn label), prevOk(bool), nextLabel, nextDisabled
+  renderProg();
+  const lv=LEVELS[state.li];
+  // 進度條僅計算「內容步驟」（去掉 intro 與 complete）
+  const contentSteps = state.steps.length-2;
+  const contentIdx = Math.min(Math.max(state.si-1,0),contentSteps-1);
+  let bar="";
+  if(opts.showBar!==false && state.si>0 && state.si<state.steps.length-1){
+    let segs="";
+    for(let k=0;k<contentSteps;k++){
+      segs+=`<div class="seg ${k<contentIdx?'on':(k===contentIdx?'cur':'')}"></div>`;
+    }
+    bar=`<div class="step-count">第 ${contentIdx+1} 步　共 ${contentSteps} 步</div><div class="step-bar">${segs}</div>`;
+  }
+  app.innerHTML=`
+    <div class="card">
+      <div class="level-head">
+        <span class="chip">${lv.ic} 關卡 ${state.li+1}　${lv.name}</span>
+      </div>
+      ${bar}
+      ${inner}
+    </div>`;
+}
+function goNext(){ state.si++; renderStep(); }
+function goPrev(){ if(state.si>0){state.si--; renderStep();} }
+
+function renderStep(){
+  stopSpeak();
+  const st=state.steps[state.si];
+  if(!st){ renderHome(); return; }
+  const T=st.type;
+  if(T==="intro") return renderIntro();
+  if(T==="read") return renderRead(st.data);
+  if(T==="check") return renderChoice(st.data,{tag:st.tag,micro:true});
+  if(T==="zi") return renderZi(st.data,st.idx);
+  if(T==="wordintro") return renderWordIntro();
+  if(T==="wordq") return renderChoice(st.data,{explain:st.data.explain});
+  if(T==="season") return renderSeason(st.data);
+  if(T==="mindmap") return renderMindmap();
+  if(T==="pirls") return renderPirls(st.data);
+  if(T==="complete") return renderComplete();
+}
+
+/* ---- 關卡預告（可預測性：先告訴學生要做什麼） ---- */
+function renderIntro(){
+  const lv=LEVELS[state.li];
+  stepShell(`
+    <div style="text-align:center;padding:14px 0 4px">
+      <div style="font-size:3.4em;line-height:1">${lv.ic}</div>
+      <h2 style="color:var(--accent-dark);margin-top:6px">關卡 ${state.li+1}　${lv.name}</h2>
+      <p style="font-size:1.1em;max-width:520px;margin:10px auto 0;text-align:left;background:var(--accent-soft);padding:16px 20px;border-radius:16px;border:1px solid #cfe6d9">${lv.intro}</p>
+      <div style="margin-top:16px"><button class="tts" onclick="speak('${lv.intro.replace(/'/g,'')}',this)">🔊 聽說明</button></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="renderHome()">🏠 回地圖</button>
+      <div class="spacer"></div>
+      <button class="btn" onclick="goNext()">我準備好了　▶</button>
+    </div>`,{showBar:false});
+}
+
+/* ---- 課文閱讀卡 ---- */
+function renderRead(p){
+  const seasonCls = p.season? "season-"+p.season : "season-none";
+  // 生詞可點：以標記包起
+  let html=p.text;
+  (p.terms||[]).forEach(t=>{
+    html=html.split(t).join(`<span class="term" onclick="showTerm('${t}',this)">${t}</span>`);
+  });
+  const isLast = state.si===state.steps.length-2; // complete 前
+  stepShell(`
+    <div class="read-badge ${seasonCls}">${p.ic}　${p.season?("這是"+p.season+"天"):p.label}</div>
+    <div class="passage" id="passage">${html}</div>
+    <div id="termPop" class="term-pop"></div>
+    <div class="read-tools">
+      <button class="tts" onclick="${ttsCall(p.text)}">🔊 聽這一段</button>
+    </div>
+    <div class="hint-line">💡 點【綠色】的語詞，可以看它的意思。讀完了就按下面的按鈕。</div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="goPrev()">◀ 上一步</button>
+      <div class="spacer"></div>
+      <button class="btn" onclick="goNext()">我讀完了　▶</button>
+    </div>`);
+}
+function showTerm(t,el){
+  const pop=document.getElementById("termPop");
+  if(!pop) return;
+  pop.innerHTML=`<span class="w">${t}</span>　<button class="tts" style="padding:6px 12px;font-size:.8em" onclick="${ttsCall(t+"。"+(GLOSS[t]||''))}">🔊 聽</button><div style="margin-top:8px">${GLOSS[t]||""}</div>`;
+  pop.classList.add("show");
+}
+
+/* ---- 單選題（micro 檢核 或 語詞題 或 PIRLS 共用核心） ---- */
+function renderChoice(data,opt={}){
+  opt=opt||{};
+  const keys=["A","B","C","D"];
+  const optsHtml=data.options.map((o,i)=>
+    `<button class="opt" id="opt${i}" onclick="answerChoice(${i},${data.answer},this,${JSON.stringify(opt.explain||"").replace(/"/g,'&quot;')||'""'})">
+       <span class="key">${keys[i]}</span><span>${o}</span></button>`).join("");
+  const tag = opt.tag? `<div class="read-badge season-秋" style="margin-bottom:10px">🤔 ${opt.tag}</div>`:"";
+  stepShell(`
+    ${tag}
+    <div class="q-text">${data.q}　<button class="tts" style="padding:6px 12px;font-size:.7em;vertical-align:middle" onclick="${ttsCall(data.q)}">🔊</button></div>
+    <div class="q-options">${optsHtml}</div>
+    <div class="feedback" id="fb"></div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="goPrev()">◀ 上一步</button>
+      <div class="spacer"></div>
+      <button class="btn" id="nextBtn" onclick="goNext()" disabled>下一題　▶</button>
+    </div>`);
+}
+function answerChoice(chosen,answer,el,explain){
+  const fb=document.getElementById("fb");
+  const nextBtn=document.getElementById("nextBtn");
+  if(chosen===answer){
+    el.classList.add("correct");
+    document.querySelectorAll(".opt").forEach(b=>b.disabled=true);
+    fb.className="feedback good show";
+    fb.innerHTML=`✅ 答對了，很棒！${explain?("<br>"+explain):""}`;
+    speak("答對了，很棒！"+(explain||""));
+    if(nextBtn) nextBtn.disabled=false;
+  }else{
+    el.classList.add("wrong"); el.disabled=true;
+    fb.className="feedback try show";
+    fb.innerHTML=`🌟 沒關係，再想想看，選選看別的答案。`;
+    speak("沒關係，再試一次看看。");
+  }
+}
+
+/* ---- 生字卡 ---- */
+function renderZi(z,idx){
+  const listen = z.z+"，"+z.zhuyin.replace(/[ˊˇˋ˙]/g,'')+"。部首是"+z.bushou+"。語詞："+z.word+"。";
+  stepShell(`
+    <div class="zi-card">
+      <div class="step-count" style="text-align:center">生字　第 ${idx+1} ／ ${ZI.length} 個</div>
+      <div class="zi-writer-wrap">
+        <div class="zi-tian"><span class="cross-h"></span><span class="cross-v"></span><div id="ziWriter"></div></div>
+        <div id="ziQuizMsg" class="zi-quizmsg"></div>
+        <div id="ziCtrl" class="zi-ctrl">
+          <button class="btn2" onclick="ziPlay()">✍️ 看筆順</button>
+          <button class="btn2" onclick="ziQuiz()">🖊️ 換我描</button>
+          <button class="btn2" onclick="ziReset()">↺ 再看一次</button>
+        </div>
+      </div>
+      <div class="zi-zhuyin">${z.zhuyin}</div>
+      <div class="zi-meta">
+        <span class="m">部首　<b>${z.bushou}</b></span>
+        <span class="m">部首外　<b>${z.out}</b> 畫</span>
+        <span class="m">總共　<b>${z.total}</b> 畫</span>
+      </div>
+      <div class="zi-word">語詞：<span class="hl">${z.word}</span></div>
+      <div style="margin-top:16px"><button class="tts" onclick="${ttsCall(listen)}">🔊 聽這個字</button></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="goPrev()">◀ 上一個</button>
+      <div class="spacer"></div>
+      <button class="btn" onclick="goNext()">${idx===ZI.length-1?"生字看完了　▶":"下一個字　▶"}</button>
+    </div>`);
+  mountHanzi(z.z);
+}
+/* ---- 生字筆順動畫（HanziWriter，資料已內嵌、離線可用） ---- */
+let curWriter=null;
+function mountHanzi(ch){
+  curWriter=null;
+  const el=document.getElementById("ziWriter");
+  const ctrl=document.getElementById("ziCtrl");
+  const hasLib=(typeof HanziWriter!=="undefined");
+  const hasData=(window.HANZI_DATA && HANZI_DATA[ch]);
+  if(!el){ return; }
+  if(!hasLib || !hasData){
+    el.innerHTML='<div class="zi-fallback">'+ch+'</div>';
+    if(ctrl) ctrl.style.display="none";
+    return;
+  }
+  if(ctrl) ctrl.style.display="flex";
+  el.innerHTML="";
+  try{
+    curWriter=HanziWriter.create(el,ch,{
+      width:200,height:200,padding:6,
+      showCharacter:true,showOutline:true,
+      strokeAnimationSpeed:0.7,delayBetweenStrokes:340,
+      strokeColor:"#33352e",radicalColor:"#3f9d7c",outlineColor:"#d8d2c0",
+      drawingColor:"#2f7d62",drawingWidth:24,highlightColor:"#8fd11e",
+      charDataLoader:function(c,onComplete){onComplete(HANZI_DATA[c]);}
+    });
+  }catch(e){
+    el.innerHTML='<div class="zi-fallback">'+ch+'</div>';
+    if(ctrl) ctrl.style.display="none";
+  }
+}
+function ziMsg(t){ const m=document.getElementById("ziQuizMsg"); if(m) m.textContent=t||""; }
+function ziPlay(){ if(!curWriter) return; ziMsg("看好每一筆的方向喔。"); curWriter.showCharacter(); curWriter.animateCharacter(); }
+function ziReset(){ if(!curWriter) return; ziMsg(""); curWriter.showCharacter(); curWriter.animateCharacter(); }
+function ziQuiz(){
+  if(!curWriter) return;
+  ziMsg("用手指或滑鼠，順著筆順描描看。");
+  curWriter.quiz({
+    onComplete:function(){ ziMsg("✅ 太棒了，你把這個字描完了！"); speak("太棒了，你把這個字寫完了！"); },
+    onMistake:function(){ ziMsg("沒關係，再順著筆畫描一次。"); }
+  });
+}
+function renderWordIntro(){
+  stepShell(`
+    <div style="text-align:center;padding:10px 0">
+      <div style="font-size:3em">🎯</div>
+      <h2 style="color:var(--accent-dark)">語詞小挑戰</h2>
+      <p style="max-width:480px;margin:8px auto 0">生字看完了，接下來玩幾題語詞小挑戰。一次一題，答對就會亮起來，答錯也沒關係，可以再選一次。</p>
+      <div style="margin-top:14px"><button class="tts" onclick="speak('生字看完了，接下來玩幾題語詞小挑戰。一次一題，答對就會亮起來，答錯也沒關係，可以再選一次。',this)">🔊 聽說明</button></div>
+    </div>
+    <div class="btn-row"><button class="btn ghost" onclick="goPrev()">◀ 上一步</button><div class="spacer"></div><button class="btn" onclick="goNext()">開始挑戰　▶</button></div>`,{showBar:false});
+}
+
+/* ---- 四季配對 ---- */
+function renderSeason(s){
+  const keys=["A","B","C"];
+  const optsHtml=s.options.map((o,i)=>
+    `<button class="opt" id="opt${i}" onclick="answerChoice(${i},${s.answer},this,'')">
+       <span class="key">${keys[i]}</span><span>${o}</span></button>`).join("");
+  stepShell(`
+    <div class="read-badge season-${s.s}" style="font-size:1.1em">${s.ic}　${s.s} 天</div>
+    <div class="q-text">${s.q}　<button class="tts" style="padding:6px 12px;font-size:.7em;vertical-align:middle" onclick="${ttsCall(s.q)}">🔊</button></div>
+    <div class="q-options">${optsHtml}</div>
+    <div class="feedback" id="fb"></div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="goPrev()">◀ 上一步</button>
+      <div class="spacer"></div>
+      <button class="btn" id="nextBtn" onclick="goNext()" disabled>下一個季節　▶</button>
+    </div>`);
+}
+
+/* ---- 完成的四季心智圖 ---- */
+function renderMindmap(){
+  const cell=s=>{
+    const o=SEASONS.find(x=>x.s===s);
+    return `<div class="mm-season s${s}">
+      <div class="t">${o.ic} ${s}天</div>
+      <div class="d">${o.ans}</div>
+      <button class="tts" style="margin-top:8px;padding:6px 12px;font-size:.78em" onclick="speak('${s}天，臺灣欒樹${o.ans}。',this)">🔊 聽</button>
+    </div>`;
+  };
+  stepShell(`
+    <h2 style="text-align:center;color:var(--accent-dark)">🌳 臺灣欒樹的一年</h2>
+    <p style="text-align:center;color:var(--muted);margin-top:-6px">你把四個季節都配對好了！這就是臺灣欒樹一整年的變化。</p>
+    <div class="mindmap">
+      <div class="mm-center">🌳 臺灣欒樹的四季變化</div>
+      <div class="mm-grid">
+        ${cell("春")}${cell("夏")}${cell("秋")}${cell("冬")}
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:16px">
+      <button class="tts" onclick="speak('臺灣欒樹的四季變化。春天長出嫩葉。夏天長滿綠葉。秋天先開黃花，再結淡紅色果實。冬天脫去黃葉。',this)">🔊 聽完整的四季</button>
+    </div>
+    <div class="btn-row"><button class="btn ghost" onclick="goPrev()">◀ 上一步</button><div class="spacer"></div><button class="btn" onclick="goNext()">完成這一關　▶</button></div>`,{showBar:false});
+}
+
+/* ---- PIRLS 提問 ---- */
+function renderPirls(p){
+  const keys=["A","B","C"];
+  const optsHtml=p.options.map((o,i)=>
+    `<button class="opt" id="opt${i}" onclick="answerPirls(${i},${p.answer},this,${JSON.stringify(p.explain).replace(/"/g,'&quot;')},${p.reflect?"true":"false"})">
+       <span class="key">${keys[i]}</span><span>${o}</span></button>`).join("");
+  const reflectBox = p.reflect? `
+     <div id="reflectArea" style="display:none">
+       <div class="frame-box">✍️ 換你說說看：<br>${p.reflect}
+         <button class="tts" style="margin-top:8px;padding:6px 12px;font-size:.78em" onclick="speak('${p.reflect.replace(/'/g,'')}',this)">🔊 聽句型</button>
+       </div>
+       <textarea class="reflect" placeholder="在這裡打上你的想法（也可以口頭說給老師聽）"></textarea>
+     </div>`:"";
+  stepShell(`
+    <div class="read-badge season-秋" style="margin-bottom:10px">🧠 ${p.tag}　<span style="font-weight:400;opacity:.8">（${p.sub}）</span></div>
+    <div class="q-text">${p.q}　<button class="tts" style="padding:6px 12px;font-size:.7em;vertical-align:middle" onclick="${ttsCall(p.q)}">🔊</button></div>
+    <div class="q-options">${optsHtml}</div>
+    <div class="feedback" id="fb"></div>
+    ${reflectBox}
+    <div class="btn-row">
+      <button class="btn ghost" onclick="goPrev()">◀ 上一步</button>
+      <div class="spacer"></div>
+      <button class="btn" id="nextBtn" onclick="goNext()" disabled>${p.reflect?"完成　▶":"下一題　▶"}</button>
+    </div>`);
+}
+function answerPirls(chosen,answer,el,explain,hasReflect){
+  const fb=document.getElementById("fb");
+  const nextBtn=document.getElementById("nextBtn");
+  if(chosen===answer){
+    el.classList.add("correct");
+    document.querySelectorAll(".opt").forEach(b=>b.disabled=true);
+    fb.className="feedback good show";
+    fb.innerHTML=`✅ 答對了！${explain?("<br>"+explain):""}`;
+    speak("答對了！"+(explain||""));
+    if(nextBtn) nextBtn.disabled=false;
+    if(hasReflect){ const r=document.getElementById("reflectArea"); if(r) r.style.display="block"; }
+  }else{
+    el.classList.add("wrong"); el.disabled=true;
+    fb.className="feedback try show";
+    fb.innerHTML=`🌟 再回去課文看看，然後選選看別的答案。`;
+    speak("再試一次看看。");
+  }
+}
+
+/* ---- 關卡完成 ---- */
+function renderComplete(){
+  state.stars[state.li]=true;
+  renderProg();
+  const lv=LEVELS[state.li];
+  const nextLi=firstUnfinished();
+  const allDone=nextLi>=4;
+  stepShell(`
+    <div class="celebrate">
+      <div class="big">🎉</div>
+      <h1>關卡 ${state.li+1}　${lv.name}　完成！</h1>
+      <div class="stars-row"><div class="s">${state.stars.map(s=>s?"⭐":"☆").join("</div><div class=\"s\">")}</div></div>
+      <p style="font-size:1.1em">你得到一顆星星 ⭐，做得很好！</p>
+      <div style="margin-top:10px"><button class="tts" onclick="speak('關卡完成，你得到一顆星星，做得很好！',this)">🔊 聽鼓勵</button></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="renderHome()">🏠 回地圖</button>
+      <div class="spacer"></div>
+      ${allDone
+        ? `<button class="btn" onclick="renderAllDone()">看看全部完成　🏆</button>`
+        : `<button class="btn" onclick="startLevel(${nextLi})">下一關　${LEVELS[nextLi].name}　▶</button>`}
+    </div>`,{showBar:false});
+}
+function renderAllDone(){
+  state.view="done"; stopSpeak(); renderProg();
+  app.innerHTML=`
+    <div class="card celebrate">
+      <div class="big">🏆</div>
+      <h1>太厲害了，全部完成！</h1>
+      <div class="stars-row"><div class="s">⭐</div><div class="s">⭐</div><div class="s">⭐</div><div class="s">⭐</div></div>
+      <p style="font-size:1.15em">你讀完了《窗口邊的臺灣欒樹》，還完成了四個關卡。</p>
+      <div class="summary">
+        <b>🌳 今天我學到了：</b>
+        <ul>
+          <li>臺灣欒樹種在學校圍牆邊，長到作者家的窗口邊。</li>
+          <li>它像一位浪漫的藝術家，四季有不同的美。</li>
+          <li>春天長嫩葉、夏天墨綠、秋天開黃花結紅果、冬天脫黃葉。</li>
+          <li>認識了 15 個生字和許多語詞。</li>
+        </ul>
+      </div>
+      <div style="margin-top:8px"><button class="tts" onclick="speak('太厲害了，全部完成！你讀完了窗口邊的臺灣欒樹，還完成了四個關卡，非常棒！',this)">🔊 聽鼓勵</button></div>
+      <div class="btn-row" style="justify-content:center">
+        <button class="btn ghost" onclick="renderHome()">🏠 回地圖</button>
+        <button class="btn" onclick="resetAll()">🔁 再玩一次</button>
+      </div>
+    </div>`;
+}
+function resetAll(){ state.stars=[false,false,false,false]; renderHome(); }
+
+/* =====================================================================
+   工具列
+   ===================================================================== */
+document.getElementById("btnFont").onclick=()=>{
+  state.fontLevel=(state.fontLevel+1)%3;
+  document.body.classList.remove("big1","big2");
+  if(state.fontLevel===1) document.body.classList.add("big1");
+  if(state.fontLevel===2) document.body.classList.add("big2");
+};
+document.getElementById("btnAudio").onclick=(e)=>{
+  state.audio=!state.audio;
+  e.currentTarget.classList.toggle("off",!state.audio);
+  if(!state.audio) stopSpeak();
+};
+document.getElementById("btnHome").onclick=()=>{ if(confirmLeave()) renderHome(); };
+function confirmLeave(){ return true; }
+document.getElementById("btnBreak").onclick=()=>{
+  if(state.view==="break") return;
+  state.prevView={li:state.li,si:state.si,view:state.view};
+  state.view="break"; stopSpeak();
+  app.innerHTML=`
+    <div class="card break-screen">
+      <div style="font-size:2.6em">🌿</div>
+      <h2 style="color:var(--accent-dark)">休息一下</h2>
+      <p>跟著圓圈慢慢呼吸。<br>圓圈變大時吸氣，變小時吐氣。</p>
+      <div class="breath" id="breathBall">吸氣　吐氣</div>
+      <p style="color:var(--muted)">準備好了，就按下面的按鈕回來。</p>
+      <button class="btn" onclick="backFromBreak()">我休息好了　▶</button>
+    </div>`;
+};
+function backFromBreak(){
+  const p=state.prevView;
+  if(p && p.view==="level"){ state.view="level"; state.li=p.li; state.si=p.si; renderStep(); }
+  else renderHome();
+}
+
+/* ---------- 啟動 ---------- */
+renderHome();
+</script>
+</body>
+</html>
